@@ -18,7 +18,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     enableRbacAuthorization: true
     enableSoftDelete: true
     softDeleteRetentionInDays: 7
-    publicNetworkAccess: 'Enabled' // NOTE: switch to 'Disabled' + Private Endpoint for production
+    publicNetworkAccess: 'Disabled' // private endpoint / trusted-services access only; matches live prod posture
   }
 }
 
