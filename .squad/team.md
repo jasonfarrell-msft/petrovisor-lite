@@ -18,6 +18,7 @@
 | Luke | Frontend Dev | .squad/agents/luke/charter.md | active |
 | Lando | DevOps / IaC | .squad/agents/lando/charter.md | active |
 | Smith | Product Manager (AI + Upstream O&G) | .squad/agents/smith/charter.md | active |
+| Yoda | Agile Delivery Methodology Advisor | .squad/agents/yoda/charter.md | active |
 | Scribe | Scribe | .squad/agents/scribe/charter.md | active |
 | Ralph | Work Monitor | .squad/agents/ralph/charter.md | active |
 | Rai | RAI Reviewer | .squad/agents/Rai/charter.md | active |

@@ -5,6 +5,12 @@
       "legacy_named": false,
       "user_specified": true,
       "note": "Name explicitly specified by user, added as a deliberate exception alongside the squad's existing Star Wars/Firefly-derived roster."
+    },
+    "yoda": {
+      "universe": "Star Wars",
+      "legacy_named": false,
+      "user_specified": false,
+      "note": "Coordinator-selected per user request ('pick a name for me'), consistent with the existing Star Wars/Firefly roster (Leia/Han/Obi-Wan/Luke/Lando). Role: Agile/Scrum methodology advisor."
     }
   }
 }

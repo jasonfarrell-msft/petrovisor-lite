@@ -12,6 +12,7 @@ How to decide who handles what.
 | Frontend / React / dashboards | Luke | React components, charts, auth context/hook |
 | DevOps / IaC / Docker | Lando | Dockerfiles, Bicep, CI scaffolding |
 | Feature scoping / work item breakdown / "new feature" requests | Smith | Decompose a feature idea into sequenced, assignable work items grounded in upstream O&G + AI domain knowledge |
+| Agile/Scrum methodology, Epic/Feature/Work Item/Sprint Task leveling & sizing, sprint-readiness review | Yoda | Define conventions for work-item hierarchy; review Smith's breakdowns for structural alignment before finalizing |
 | Code review | Leia | Review PRs, check quality, suggest improvements |
 | Testing | Han (backend/xUnit), Luke (frontend/Jest) | Write tests, find edge cases, verify fixes |
 | Scope & priorities | Leia | What to build next, trade-offs, decisions |
@@ -32,6 +33,16 @@ How to decide who handles what.
 2. When a `squad:{member}` label is applied, that member picks up the issue in their next session.
 3. Members can reassign by removing their label and adding another member's label.
 4. The `squad` label is the "inbox" — untriaged issues waiting for Lead review.
+
+## Planning Workflow — Smith + Yoda
+
+Whenever Smith produces an Epic write-up, feature breakdown, or sprint plan intended to become a GitHub issue/Project item:
+
+1. Coordinator spawns Smith to draft the breakdown (as today).
+2. **Before finalizing**, coordinator spawns Yoda (background is fine, but must complete before the `gh issue create`/Project step) to review Smith's draft against Agile/Scrum conventions.
+3. If Yoda returns ✅ Aligned → proceed to create the issue/Project item.
+4. If Yoda returns ⚠️ Aligned with notes or 🔴 Misaligned → route the specific feedback back to Smith for revision. Smith revises; re-review by Yoda is not required for minor ⚠️ notes already addressed, but is required after a 🔴 revision.
+5. Present Yoda's verdict to the user alongside Smith's final breakdown so the methodology check is visible, not silent.
 
 ## Rules
 
