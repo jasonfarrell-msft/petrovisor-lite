@@ -1,0 +1,50 @@
+# Squad: ignore runtime state (logs, inbox, sessions)
+# Note: .squad/casting/* is identity and MUST be committed to main, not ignored
+.squad/orchestration-log/
+.squad/log/
+.squad/decisions/inbox/
+.squad/sessions/
+.squad/.scratch/
+.squad/.cache/
+# Squad: SubSquad activation file (local to this machine)
+.squad-workstream
+
+# .NET build output (backend AND frontend)
+bin/
+obj/
+publish/
+*.user
+.vs/
+
+# .NET test results / coverage
+[Tt]est[Rr]esults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Node (frontend, added ahead of Luke's scaffold)
+node_modules/
+dist/
+.env
+.env.*.local
+
+# Secrets / local overrides (do NOT ignore appsettings.json / appsettings.Development.json
+# unless they contain real secrets - verified clean as of initial commit)
+appsettings.*.local.json
+*.secrets.json
+*secret*.json
+*credential*.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Azure Developer CLI local state
+.azure/
+
+# npm cache (local tool cache, not project source)
+.npm-cache/

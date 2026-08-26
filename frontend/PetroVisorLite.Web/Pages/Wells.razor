@@ -1,0 +1,63 @@
+@page "/wells"
+@inject PetroVisorLite.Web.Services.PetroVisorApiClient ApiClient
+@using PetroVisorLite.Web.Models
+
+<PageTitle>Wells</PageTitle>
+
+<h1>Wells</h1>
+
+@if (_loadError is not null)
+{
+    <div class="alert alert-danger">@_loadError</div>
+}
+else if (_wells is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (_wells.Count == 0)
+{
+    <p>No wells found.</p>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>API Number</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var well in _wells)
+            {
+                <tr>
+                    <td>@well.Name</td>
+                    <td>@well.ApiNumber</td>
+                    <td>@well.Latitude.ToString("F4")</td>
+                    <td>@well.Longitude.ToString("F4")</td>
+                    <td><a class="btn btn-sm btn-outline-primary" href="@($"wells/{well.Id}")">Details</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<WellDto>? _wells;
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _wells = await ApiClient.GetWellsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"Could not reach the backend API: {ex.Message}";
+        }
+    }
+}

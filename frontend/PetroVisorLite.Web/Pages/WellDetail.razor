@@ -1,0 +1,148 @@
+@page "/wells/{Id:guid}"
+@implements IAsyncDisposable
+@inject PetroVisorLite.Web.Services.PetroVisorApiClient ApiClient
+@inject PetroVisorLite.Web.Services.ChartInteropService ChartInterop
+@using PetroVisorLite.Web.Analytics
+@using PetroVisorLite.Web.Models
+
+<PageTitle>@(_well is not null ? $"Well: {_well.Name}" : "Well Detail")</PageTitle>
+
+@if (_loadError is not null)
+{
+    <div class="alert alert-danger">@_loadError</div>
+}
+else if (_well is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h1>@_well.Name</h1>
+    <p class="text-muted">API Number: @_well.ApiNumber &middot; Lat/Lon: @_well.Latitude.ToString("F4"), @_well.Longitude.ToString("F4")</p>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Total Oil (period)</h6>
+                    <p class="fs-4">@_kpi?.TotalOilBbl.ToString("N0") bbl</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Total Gas (period)</h6>
+                    <p class="fs-4">@_kpi?.TotalGasMcf.ToString("N0") mcf</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Est. Decline Rate</h6>
+                    <p class="fs-4">
+                        @(_dailyDeclinePercent is null ? "n/a" : $"{_dailyDeclinePercent:P2}/day")
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Artificial Lift</h6>
+                    <p class="fs-5">@_currentLiftType / @_currentLiftStatus</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_lossFlagCount > 0)
+    {
+        <div class="alert alert-warning">
+            @_lossFlagCount day(s) flagged as production loss (more than 15% below trailing 7-day average).
+        </div>
+    }
+
+    <h2 class="h4">Production Trend</h2>
+    <canvas id="productionChart" height="100"></canvas>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private WellDto? _well;
+    private ProductionKpiDto? _kpi;
+    private string? _loadError;
+
+    private double? _dailyDeclinePercent;
+    private int _lossFlagCount;
+    private string _currentLiftType = "Unknown";
+    private string _currentLiftStatus = "Unknown";
+
+    private bool _chartRendered;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _chartRendered = false;
+        try
+        {
+            _well = await ApiClient.GetWellAsync(Id);
+            if (_well is null)
+            {
+                return;
+            }
+
+            var periodEnd = DateOnly.FromDateTime(DateTime.UtcNow);
+            var periodStart = periodEnd.AddMonths(-6);
+
+            var records = (await ApiClient.GetProductionAsync(Id, periodStart, periodEnd))
+                .OrderBy(r => r.Date)
+                .ToList();
+
+            _kpi = await ApiClient.GetProductionKpiAsync(Id, periodStart, periodEnd);
+
+            if (records.Count > 0)
+            {
+                var last = records[^1];
+                _currentLiftType = last.ArtificialLiftType;
+                _currentLiftStatus = last.ArtificialLiftStatus;
+            }
+
+            // Simple client-side approximations of the backend's decline-rate / loss-detection
+            // analytics (see backend Application/Analytics), since those calculators are
+            // currently only wired into KpiService's totals and not yet exposed as their own
+            // API endpoints. Kept intentionally simple to match the backend's stated
+            // methodology (log-linear decline fit, trailing-average loss threshold).
+            _dailyDeclinePercent = ProductionTrendAnalyzer.EstimateDailyDeclinePercent(records);
+            _lossFlagCount = ProductionTrendAnalyzer.CountLossFlags(records);
+
+            _labels = records.Select(r => r.Date.ToString("yyyy-MM-dd")).ToList();
+            _oilData = records.Select(r => r.OilVolumeBbl).ToList();
+            _gasData = records.Select(r => r.GasVolumeMcf).ToList();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"Could not reach the backend API: {ex.Message}";
+        }
+    }
+
+    private List<string> _labels = new();
+    private List<double> _oilData = new();
+    private List<double> _gasData = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_well is not null && !_chartRendered)
+        {
+            _chartRendered = true;
+            await ChartInterop.RenderProductionChartAsync("productionChart", _labels, _oilData, _gasData);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await ChartInterop.DisposeAsync();
+    }
+}

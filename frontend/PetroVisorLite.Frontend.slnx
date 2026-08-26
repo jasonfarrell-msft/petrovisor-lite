@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/PetroVisorLite.Web.Tests/PetroVisorLite.Web.Tests.csproj" />
+  </Folder>
+  <Project Path="PetroVisorLite.Web/PetroVisorLite.Web.csproj" />
+</Solution>

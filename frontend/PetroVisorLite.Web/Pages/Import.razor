@@ -1,0 +1,88 @@
+@page "/import"
+@inject PetroVisorLite.Web.Services.PetroVisorApiClient ApiClient
+@using PetroVisorLite.Web.Models
+
+<PageTitle>CSV Import</PageTitle>
+
+<h1>Import Production Data (CSV)</h1>
+
+<p class="text-muted">
+    Expected header columns: <code>WellId, Date, OilVolumeBbl, GasVolumeMcf, WaterVolumeBbl,
+    ChokeSize64th, WellheadPressurePsi, ArtificialLiftType, ArtificialLiftStatus</code>.
+</p>
+
+<div class="mb-3">
+    <label class="form-label">CSV file</label>
+    <InputFile OnChange="OnFileSelectedAsync" class="form-control" accept=".csv" />
+</div>
+<button type="button" class="btn btn-primary" disabled="@(_selectedFile is null || _isUploading)" @onclick="UploadAsync">
+    Upload &amp; Import
+</button>
+
+@if (_errorMessage is not null)
+{
+    <div class="alert alert-danger mt-3">@_errorMessage</div>
+}
+
+@if (_result is not null)
+{
+    <div class="alert @(_result.RowsFailed > 0 ? "alert-warning" : "alert-success") mt-3">
+        <p><strong>@_result.RowsImported</strong> row(s) imported, <strong>@_result.RowsFailed</strong> failed.</p>
+        @if (_result.Errors.Count > 0)
+        {
+            <ul>
+                @foreach (var error in _result.Errors)
+                {
+                    <li>Row @error.RowNumber: @error.Reason</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+
+    private IBrowserFile? _selectedFile;
+    private bool _isUploading;
+    private CsvImportResultDto? _result;
+    private string? _errorMessage;
+
+    private void OnFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _result = null;
+        _errorMessage = null;
+    }
+
+    private async Task UploadAsync()
+    {
+        if (_selectedFile is null)
+        {
+            _errorMessage = "Please choose a CSV file to upload.";
+            return;
+        }
+
+        _isUploading = true;
+        _errorMessage = null;
+        _result = null;
+        try
+        {
+            await using var stream = _selectedFile.OpenReadStream(MaxFileSizeBytes);
+            _result = await ApiClient.ImportProductionCsvAsync(stream, _selectedFile.Name);
+
+            if (_result is null)
+            {
+                _errorMessage = "Import failed. The backend rejected the request — check the file format and your session.";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _errorMessage = $"Could not reach the backend API: {ex.Message}";
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+}

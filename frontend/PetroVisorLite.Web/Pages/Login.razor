@@ -1,0 +1,75 @@
+@page "/login"
+@inject PetroVisorLite.Web.Services.PetroVisorApiClient ApiClient
+@inject PetroVisorLite.Web.Auth.JwtAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Log in</PageTitle>
+
+<h1>Log in</h1>
+
+<EditForm Model="_model" OnValidSubmit="HandleLoginAsync" FormName="login">
+    <DataAnnotationsValidator />
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="_model.Email" />
+        <ValidationMessage For="@(() => _model.Email)" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText class="form-control" type="password" @bind-Value="_model.Password" />
+        <ValidationMessage For="@(() => _model.Password)" />
+    </div>
+    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">Log in</button>
+</EditForm>
+
+@if (_errorMessage is not null)
+{
+    <div class="alert alert-danger mt-3">@_errorMessage</div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private readonly LoginFormModel _model = new();
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    private async Task HandleLoginAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+        try
+        {
+            var response = await ApiClient.LoginAsync(_model.Email, _model.Password);
+            if (response is null)
+            {
+                _errorMessage = "Invalid email or password.";
+                return;
+            }
+
+            await AuthStateProvider.NotifyLoginAsync(response.Token);
+
+            var target = string.IsNullOrWhiteSpace(ReturnUrl) ? "dashboard" : ReturnUrl;
+            Navigation.NavigateTo(target, forceLoad: false);
+        }
+        catch (HttpRequestException ex)
+        {
+            _errorMessage = $"Could not reach the backend API: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private class LoginFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PetroVisorLite.Api/PetroVisorLite.Api.csproj" />
+    <Project Path="src/PetroVisorLite.Application/PetroVisorLite.Application.csproj" />
+    <Project Path="src/PetroVisorLite.Domain/PetroVisorLite.Domain.csproj" />
+    <Project Path="src/PetroVisorLite.Infrastructure/PetroVisorLite.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PetroVisorLite.Api.Tests/PetroVisorLite.Api.Tests.csproj" />
+    <Project Path="tests/PetroVisorLite.Application.Tests/PetroVisorLite.Application.Tests.csproj" />
+  </Folder>
+</Solution>

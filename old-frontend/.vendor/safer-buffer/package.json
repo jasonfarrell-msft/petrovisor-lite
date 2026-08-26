@@ -1,0 +1,26 @@
+{
+  "name": "safer-buffer",
+  "version": "2.1.2",
+  "description": "Modern Buffer API polyfill without footguns",
+  "main": "safer.js",
+  "author": {
+    "name": "Nikita Skovoroda",
+    "email": "chalkerx@gmail.com",
+    "url": "https://github.com/ChALkeR"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChALkeR/safer-buffer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ChALkeR/safer-buffer/issues"
+  },
+  "files": [
+    "Porting-Buffer.md",
+    "Readme.md",
+    "tests.js",
+    "dangerous.js",
+    "safer.js"
+  ]
+}

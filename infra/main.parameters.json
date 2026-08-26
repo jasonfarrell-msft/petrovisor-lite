@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "centralus"
+    },
+    "staticWebAppLocation": {
+      "value": "centralus"
+    },
+    "projectName": {
+      "value": "petrovisor"
+    },
+    "nameSuffix": {
+      "value": "cus01"
+    },
+    "backendImage": {
+      "value": "myregistry.azurecr.io/petrovisorlite-api:latest"
+    },
+    "staticWebAppSkuName": {
+      "value": "Standard"
+    },
+    "sqlAdministratorLogin": {
+      "value": "pvliteadmin"
+    },
+    "sqlAdministratorLoginPassword": {
+      "value": "__SUPPLY_AT_DEPLOY_TIME__"
+    },
+    "sqlAadAdminObjectId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "sqlAadAdminLoginName": {
+      "value": "group-petrovisor-lite-admins@example.com"
+    }
+  }
+}

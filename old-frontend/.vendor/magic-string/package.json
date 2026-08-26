@@ -1,0 +1,39 @@
+{
+  "name": "magic-string",
+  "version": "0.30.21",
+  "type": "commonjs",
+  "description": "Modify strings, generate sourcemaps",
+  "keywords": [
+    "string",
+    "string manipulation",
+    "sourcemap",
+    "templating",
+    "transpilation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rich-Harris/magic-string.git"
+  },
+  "license": "MIT",
+  "author": "Rich Harris",
+  "main": "./dist/magic-string.cjs.js",
+  "module": "./dist/magic-string.es.mjs",
+  "sideEffects": false,
+  "jsnext:main": "./dist/magic-string.es.mjs",
+  "types": "./dist/magic-string.cjs.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./dist/magic-string.es.mjs",
+      "require": "./dist/magic-string.cjs.js"
+    }
+  },
+  "files": [
+    "dist/*",
+    "index.d.ts",
+    "README.md"
+  ],
+  "dependencies": {
+    "@jridgewell/sourcemap-codec": "^1.5.5"
+  }
+}

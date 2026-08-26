@@ -1,0 +1,19 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/css/*",
+      "/js/*",
+      "/_framework/*",
+      "/icon-*.png",
+      "/appsettings*.json",
+      "/*.{png,jpg,jpeg,gif,svg,ico,css,js,json,woff,woff2,ttf,eot,map,wasm,dll,pdb,blat,dat}"
+    ]
+  },
+  "mimeTypes": {
+    ".dll": "application/octet-stream",
+    ".wasm": "application/wasm",
+    ".blat": "application/octet-stream",
+    ".dat": "application/octet-stream"
+  }
+}

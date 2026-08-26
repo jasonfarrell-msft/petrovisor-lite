@@ -1,0 +1,55 @@
+{
+  "name": "petrovisor-lite-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.0.0",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.3",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "stackback": "file:./.vendor/stackback",
+    "siginfo": "file:./.vendor/siginfo",
+    "punycode": "file:./.vendor/punycode",
+    "tr46": "file:./.vendor/tr46",
+    "safer-buffer": "file:./.vendor/safer-buffer",
+    "iconv-lite": "file:./.vendor/iconv-lite",
+    "@jridgewell/sourcemap-codec": "file:./.vendor/@jridgewell/sourcemap-codec",
+    "@types/estree": "file:./.vendor/@types/estree",
+    "convert-source-map": "file:./.vendor/convert-source-map",
+    "estree-walker": "file:./.vendor/estree-walker",
+    "assertion-error": "file:./.vendor/assertion-error",
+    "@types/deep-eql": "file:./.vendor/@types/deep-eql",
+    "chai": "file:./.vendor/chai",
+    "@types/chai": "file:./.vendor/@types/chai",
+    "why-is-node-running": "file:./.vendor/why-is-node-running",
+    "tinyrainbow": "file:./.vendor/tinyrainbow",
+    "tinyexec": "file:./.vendor/tinyexec",
+    "tinybench": "file:./.vendor/tinybench",
+    "std-env": "file:./.vendor/std-env",
+    "pathe": "file:./.vendor/pathe",
+    "obug": "file:./.vendor/obug",
+    "magic-string": "file:./.vendor/magic-string"
+  }
+}

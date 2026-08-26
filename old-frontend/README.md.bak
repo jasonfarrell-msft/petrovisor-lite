@@ -1,0 +1,9 @@
+# Frontend
+
+Owned by **Luke** (Frontend agent). This directory intentionally has no
+application code yet — Luke will scaffold the React app here (e.g. Vite +
+React + TypeScript), wire it to the `PetroVisorLite.Api` backend, and build
+the dashboards/UI.
+
+Leia (Lead/Architect) only creates this placeholder as part of top-level repo
+scaffolding and does not build frontend features.

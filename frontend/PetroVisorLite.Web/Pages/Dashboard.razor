@@ -1,0 +1,132 @@
+@page "/"
+@page "/dashboard"
+@implements IAsyncDisposable
+@inject PetroVisorLite.Web.Services.PetroVisorApiClient ApiClient
+@inject PetroVisorLite.Web.Services.ChartInteropService ChartInterop
+@using PetroVisorLite.Web.Models
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1>Dashboard</h1>
+
+@if (_loadError is not null)
+{
+    <div class="alert alert-danger">@_loadError</div>
+}
+else if (!_loaded)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Wells</h6>
+                    <p class="fs-4">@_summary?.WellCount</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Facilities</h6>
+                    <p class="fs-4">@_summary?.FacilityCount</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Total Oil (30d)</h6>
+                    <p class="fs-4">@_summary?.TotalOilBbl30d.ToString("N0") bbl</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted">Total Gas (30d)</h6>
+                    <p class="fs-4">@_summary?.TotalGasMcf30d.ToString("N0") mcf</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2 class="h4">Field-wide Daily Production Trend (30d)</h2>
+            <canvas id="fieldTrendChart" height="90"></canvas>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2 class="h4">Production by Artificial Lift Type</h2>
+            <canvas id="liftBreakdownChart" height="140"></canvas>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h4">Top Wells by Decline Rate</h2>
+            <canvas id="declineRankingChart" height="140"></canvas>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loaded;
+    private string? _loadError;
+    private DashboardSummaryDto? _summary;
+    private bool _chartsRendered;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var periodEnd = DateOnly.FromDateTime(DateTime.UtcNow);
+            var periodStart = periodEnd.AddDays(-30);
+
+            // Single aggregate call instead of the previous per-well KPI-fetch loop, which was
+            // slow because it made one HTTP round trip per well just to build the summary cards.
+            _summary = await ApiClient.GetDashboardSummaryAsync(periodStart, periodEnd);
+            _loaded = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"Could not reach the backend API: {ex.Message}";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_summary is not null && !_chartsRendered)
+        {
+            _chartsRendered = true;
+
+            var trend = _summary.FieldDailyProduction;
+            await ChartInterop.RenderFieldTrendChartAsync(
+                "fieldTrendChart",
+                trend.Select(d => d.Date.ToString("yyyy-MM-dd")).ToList(),
+                trend.Select(d => d.OilVolumeBbl).ToList(),
+                trend.Select(d => d.GasVolumeMcf).ToList(),
+                trend.Select(d => d.WaterVolumeBbl).ToList());
+
+            var lift = _summary.ArtificialLiftBreakdown;
+            await ChartInterop.RenderLiftBreakdownChartAsync(
+                "liftBreakdownChart",
+                lift.Select(l => l.ArtificialLiftType).ToList(),
+                lift.Select(l => l.TotalOilBbl30d).ToList());
+
+            var decline = _summary.TopWellsByDecline.Where(w => w.DailyDeclinePercent is not null).ToList();
+            await ChartInterop.RenderDeclineRankingChartAsync(
+                "declineRankingChart",
+                decline.Select(w => w.WellName).ToList(),
+                decline.Select(w => (w.DailyDeclinePercent ?? 0) * 100).ToList());
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await ChartInterop.DisposeAsync();
+    }
+}

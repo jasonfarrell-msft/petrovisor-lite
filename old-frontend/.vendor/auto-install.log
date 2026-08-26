@@ -1,0 +1,258 @@
+=== install attempt 1 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/estree-walker/-/estree-walker-3.0.3.tgz
+npm error 404
+npm error 404  The requested resource 'estree-walker@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/estree-walker/-/estree-walker-3.0.3.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_07_27_509Z-debug-0.log
+Detected missing package: 'estree-walker' version '3.0.3'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/src/async.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/src/index.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/src/sync.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/src/walker.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/types/async.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/types/index.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/types/sync.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/types/walker.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker/README.md
+Vendored estree-walker@3.0.3 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/estree-walker
+Added override for estree-walker
+=== install attempt 2 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/assertion-error/-/assertion-error-2.0.1.tgz
+npm error 404
+npm error 404  The requested resource 'assertion-error@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/assertion-error/-/assertion-error-2.0.1.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_09_45_576Z-debug-0.log
+Detected missing package: 'assertion-error' version '2.0.1'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/assertion-error/index.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/assertion-error/index.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/assertion-error/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/assertion-error/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/assertion-error/README.md
+Vendored assertion-error@2.0.1 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/assertion-error
+Added override for assertion-error
+=== install attempt 3 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/@types/deep-eql/-/deep-eql-4.0.2.tgz
+npm error 404
+npm error 404  The requested resource '@types/deep-eql@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/@types/deep-eql/-/deep-eql-4.0.2.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_12_10_842Z-debug-0.log
+Detected missing package: '@types/deep-eql' version '4.0.2'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/deep-eql/index.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/deep-eql/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/deep-eql/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/deep-eql/README.md
+Vendored @types/deep-eql@4.0.2 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/deep-eql
+Added override for @types/deep-eql
+=== install attempt 4 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/chai/-/chai-6.2.2.tgz
+npm error 404
+npm error 404  The requested resource 'chai@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/chai/-/chai-6.2.2.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_14_21_900Z-debug-0.log
+Detected missing package: 'chai' version '6.2.2'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai/index.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai/README.md
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai/register-assert.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai/register-expect.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai/register-should.js
+Vendored chai@6.2.2 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/chai
+Added override for chai
+=== install attempt 5 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/@types/chai/-/chai-5.2.3.tgz
+npm error 404
+npm error 404  The requested resource '@types/chai@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/@types/chai/-/chai-5.2.3.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_16_48_236Z-debug-0.log
+Detected missing package: '@types/chai' version '5.2.3'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/chai/index.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/chai/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/chai/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/chai/README.md
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/chai/register-should.d.ts
+Vendored @types/chai@5.2.3 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/@types/chai
+Added override for @types/chai
+=== install attempt 6 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/why-is-node-running/-/why-is-node-running-2.3.0.tgz
+npm error 404
+npm error 404  The requested resource 'why-is-node-running@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/why-is-node-running/-/why-is-node-running-2.3.0.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_18_55_215Z-debug-0.log
+Detected missing package: 'why-is-node-running' version '2.3.0'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/.github/FUNDING.yml
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/cli.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/example.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/include.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/index.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running/README.md
+Vendored why-is-node-running@2.3.0 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/why-is-node-running
+Added override for why-is-node-running
+=== install attempt 7 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/tinyrainbow/-/tinyrainbow-3.1.1.tgz
+npm error 404
+npm error 404  The requested resource 'tinyrainbow@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/tinyrainbow/-/tinyrainbow-3.1.1.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_21_01_360Z-debug-0.log
+Detected missing package: 'tinyrainbow' version '3.1.1'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyrainbow/dist/index.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyrainbow/dist/index.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyrainbow/LICENCE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyrainbow/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyrainbow/README.md
+Vendored tinyrainbow@3.1.1 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyrainbow
+Added override for tinyrainbow
+=== install attempt 8 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/tinyexec/-/tinyexec-1.3.0.tgz
+npm error 404
+npm error 404  The requested resource 'tinyexec@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/tinyexec/-/tinyexec-1.3.0.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_23_01_238Z-debug-0.log
+Detected missing package: 'tinyexec' version '1.3.0'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyexec/dist/main.d.mts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyexec/dist/main.mjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyexec/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyexec/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyexec/README.md
+Vendored tinyexec@1.3.0 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinyexec
+Added override for tinyexec
+=== install attempt 9 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/tinybench/-/tinybench-2.9.0.tgz
+npm error 404
+npm error 404  The requested resource 'tinybench@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/tinybench/-/tinybench-2.9.0.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_25_03_076Z-debug-0.log
+Detected missing package: 'tinybench' version '2.9.0'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench/dist/index.cjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench/dist/index.d.cts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench/dist/index.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench/dist/index.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench/README.md
+Vendored tinybench@2.9.0 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/tinybench
+Added override for tinybench
+=== install attempt 10 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/std-env/-/std-env-4.2.0.tgz
+npm error 404
+npm error 404  The requested resource 'std-env@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/std-env/-/std-env-4.2.0.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_27_06_926Z-debug-0.log
+Detected missing package: 'std-env' version '4.2.0'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/std-env/dist/index.d.mts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/std-env/dist/index.mjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/std-env/LICENCE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/std-env/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/std-env/README.md
+Vendored std-env@4.2.0 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/std-env
+Added override for std-env
+=== install attempt 11 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/pathe/-/pathe-2.0.3.tgz
+npm error 404
+npm error 404  The requested resource 'pathe@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/pathe/-/pathe-2.0.3.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_29_43_048Z-debug-0.log
+Detected missing package: 'pathe' version '2.0.3'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/shared/pathe.BSlhyZSM.cjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/shared/pathe.M-eThtNZ.mjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/index.cjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/index.d.cts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/index.d.mts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/index.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/index.mjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/utils.cjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/utils.d.cts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/utils.d.mts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/utils.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/dist/utils.mjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/README.md
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe/utils.d.ts
+Vendored pathe@2.0.3 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/pathe
+Added override for pathe
+=== install attempt 12 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/obug/-/obug-2.1.4.tgz
+npm error 404
+npm error 404  The requested resource 'obug@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/obug/-/obug-2.1.4.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_32_06_408Z-debug-0.log
+Detected missing package: 'obug' version '2.1.4'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/dist/browser.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/dist/browser.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/dist/browser.min.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/dist/core.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/dist/core.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/dist/node.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/dist/node.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug/README.md
+Vendored obug@2.1.4 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/obug
+Added override for obug
+=== install attempt 13 ===
+npm error code E404
+npm error 404 Not Found - GET https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/magic-string/-/magic-string-0.30.21.tgz
+npm error 404
+npm error 404  The requested resource 'magic-string@https://packagefeedproxy.microsoft.io/npm/1es-public/_packaging/npm-public/npm/registry/magic-string/-/magic-string-0.30.21.tgz' could not be found or you do not have permission to access it.
+npm error 404
+npm error 404 Note that you can also install from a
+npm error 404 tarball, folder, http url, or git url.
+npm error A complete log of this run can be found in: /Users/jasonfarrell/Projects/petrovisor/frontend/.npm-cache/_logs/2026-08-25T17_34_15_041Z-debug-0.log
+Detected missing package: 'magic-string' version '0.30.21'
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.cjs.d.ts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.cjs.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.cjs.js.map
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.es.d.mts
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.es.mjs
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.es.mjs.map
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.umd.js
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/dist/magic-string.umd.js.map
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/LICENSE
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/package.json
+  wrote /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string/README.md
+Vendored magic-string@0.30.21 -> /Users/jasonfarrell/Projects/petrovisor/frontend/.vendor/magic-string
+Added override for magic-string
+=== install attempt 14 ===
+
+No recognizable 404 pattern; giving up.
