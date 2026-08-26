@@ -12,7 +12,7 @@ How to decide who handles what.
 | Frontend / React / dashboards | Luke | React components, charts, auth context/hook |
 | DevOps / IaC / Docker | Lando | Dockerfiles, Bicep, CI scaffolding |
 | Feature scoping / work item breakdown / "new feature" requests | Smith | Decompose a feature idea into sequenced, assignable work items grounded in upstream O&G + AI domain knowledge |
-| Agile/Scrum methodology, Epic/Feature/Work Item/Sprint Task leveling & sizing, sprint-readiness review | Yoda | Define conventions for work-item hierarchy; review Smith's breakdowns for structural alignment before finalizing |
+| Agile/Scrum methodology, Epic/Feature (single level) vs. Work Item vs. Sprint Task leveling & sizing, sprint-readiness review | Yoda | Define conventions for work-item hierarchy; review Smith's breakdowns for structural alignment before finalizing |
 | Code review | Leia | Review PRs, check quality, suggest improvements |
 | Testing | Han (backend/xUnit), Luke (frontend/Jest) | Write tests, find edge cases, verify fixes |
 | Scope & priorities | Leia | What to build next, trade-offs, decisions |
@@ -36,7 +36,7 @@ How to decide who handles what.
 
 ## Planning Workflow — Smith + Yoda
 
-Whenever Smith produces an Epic write-up, feature breakdown, or sprint plan intended to become a GitHub issue/Project item:
+Whenever Smith produces an Epic/Feature write-up (Epic and Feature are the same level in this project) or sprint plan intended to become a GitHub issue/Project item:
 
 1. Coordinator spawns Smith to draft the breakdown (as today).
 2. **Before finalizing**, coordinator spawns Yoda (background is fine, but must complete before the `gh issue create`/Project step) to review Smith's draft against Agile/Scrum conventions.
