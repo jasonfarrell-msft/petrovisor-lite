@@ -1,3 +1,10 @@
 {
-  "agents": {}
+  "agents": {
+    "smith": {
+      "universe": "The Matrix",
+      "legacy_named": false,
+      "user_specified": true,
+      "note": "Name explicitly specified by user, added as a deliberate exception alongside the squad's existing Star Wars/Firefly-derived roster."
+    }
+  }
 }

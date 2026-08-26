@@ -11,6 +11,7 @@ How to decide who handles what.
 | KPI & analytics logic | Obi-Wan | Decline rate, production loss detection, artificial lift flags |
 | Frontend / React / dashboards | Luke | React components, charts, auth context/hook |
 | DevOps / IaC / Docker | Lando | Dockerfiles, Bicep, CI scaffolding |
+| Feature scoping / work item breakdown / "new feature" requests | Smith | Decompose a feature idea into sequenced, assignable work items grounded in upstream O&G + AI domain knowledge |
 | Code review | Leia | Review PRs, check quality, suggest improvements |
 | Testing | Han (backend/xUnit), Luke (frontend/Jest) | Write tests, find edge cases, verify fixes |
 | Scope & priorities | Leia | What to build next, trade-offs, decisions |

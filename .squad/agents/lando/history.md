@@ -49,3 +49,13 @@ Set up a concrete (still undeployed) deployment target per request:
   reconciliation in the README.
 - Recorded full decision at `.squad/decisions/inbox/lando-cus01-deployment.md`.
 - Still nothing deployed — scaffolding/authoring only, per standing constraint.
+
+## 2026-08-25 21:06 - Git init + initial commit
+- Ran `git init` at repo root (was a folder-backed workspace with no .git).
+- No global/local git identity existed; set local repo config: user.name "Jason Farrell", user.email "jasonfarrell@users.noreply.github.com".
+- Rewrote .gitignore to cover: .NET bin/obj/publish/.vs/*.user (backend+frontend), TestResults/coverage, Node node_modules/dist/.env, IDE .vscode//.idea/, OS junk (.DS_Store/Thumbs.db), azd .azure/, local npm cache, and secret-pattern files (*secret*.json, *credential*.json, appsettings.*.local.json). Kept existing Squad-specific ignore rules.
+- Scanned appsettings.json/appsettings.Development.json (backend+frontend) and .cs files for hardcoded secrets/connection strings/API keys: none found. Only a marked DEV-ONLY seed password constant and a masked comment example existed - both benign.
+- Checked infra/rg-petrovisor-cus01.bicepparam: sqlAdministratorLoginPassword is a placeholder overridden at deploy time, no real secret.
+- Staged all files with `git add -A` (469 files); verified no bin/obj/publish/node_modules leaked in and no file over ~140KB.
+- Committed as 673268a: "Initial commit: PetroVisor Lite scaffold, Blazor frontend, KPI dashboard, Azure deployment infra".
+- `git status` is clean. No remote configured/pushed per instructions (local-only).
