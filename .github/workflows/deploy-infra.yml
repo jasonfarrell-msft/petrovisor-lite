@@ -155,11 +155,31 @@ jobs:
             --parameters "${PARAM_FILE}"
 
       # No secrets required: Azure SQL uses Entra-only authentication.
+      #
+      # Retries on transient failure: the Microsoft.CognitiveServices RP has a
+      # known race condition (Azure/bicep-types-az#2419) where a newly created
+      # account's system-assigned identity isn't yet visible internally when
+      # the accounts/projects child resource is created in the same
+      # deployment, even though dependsOn guarantees ARM-level ordering and
+      # the account reports provisioningState Succeeded. This self-heals on
+      # retry once identity propagation completes, so we retry instead of
+      # requiring a manual re-run.
       - name: Deploy Bicep to resource group (incremental)
         run: |
-          az deployment group create \
+          max_attempts=3
+          attempt=1
+          until az deployment group create \
             --name "petrovisor-$(date -u +%Y%m%d%H%M%S)" \
             --resource-group "${RESOURCE_GROUP}" \
             --mode Incremental \
             --template-file "${TEMPLATE_FILE}" \
             --parameters "${PARAM_FILE}"
+          do
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Deployment failed after ${max_attempts} attempts."
+              exit 1
+            fi
+            echo "Deployment attempt ${attempt} failed; retrying in 30s (possible identity propagation delay)..."
+            attempt=$((attempt + 1))
+            sleep 30
+          done
