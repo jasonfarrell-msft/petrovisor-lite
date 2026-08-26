@@ -1,0 +1,165 @@
+name: Deploy Infra (Azure)
+
+# Authentication is OIDC / workload identity federation ONLY.
+# There is no client secret, no password, and no azure-credentials JSON blob
+# anywhere in this repo or in GitHub secrets. See infra/README.md.
+#
+# TRIGGER MODEL:
+#   push to main    -> validate + deploy (continuous delivery)
+#   pull_request    -> validate + what-if only. NEVER deploys.
+#   workflow_dispatch -> manual escape hatch; choose what-if or deploy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "what-if (read-only preview) or deploy (creates/changes Azure resources)"
+        type: choice
+        required: true
+        default: what-if
+        options:
+          - what-if
+          - deploy
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/deploy-infra.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/deploy-infra.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-infra-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RESOURCE_GROUP: rg-petrovisor-cus01
+  TEMPLATE_FILE: infra/main.bicep
+  PARAM_FILE: infra/rg-petrovisor-cus01.bicepparam
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Build/lint the Bicep. No Azure credentials needed, so no id-token here.
+  #    Runs on every trigger and gates everything downstream.
+  # ---------------------------------------------------------------------------
+  validate:
+    name: Bicep build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: az bicep build
+        run: |
+          az bicep install
+          az bicep version
+          az bicep build --file "${TEMPLATE_FILE}" --stdout > /dev/null
+          az bicep build-params --file "${PARAM_FILE}" --stdout > /dev/null
+          echo "Bicep build succeeded."
+
+  # ---------------------------------------------------------------------------
+  # 2. PR validation. Read-only: shows the diff without changing anything.
+  #    This job has NO `environment:` and never calls `deployment group create`,
+  #    so a pull request can never mutate Azure.
+  #    OIDC subject on PR runs: repo:<owner>/<repo>:pull_request
+  #    OIDC subject on dispatch runs: repo:<owner>/<repo>:ref:refs/heads/<branch>
+  # ---------------------------------------------------------------------------
+  what-if:
+    name: What-if (read-only validation)
+    needs: validate
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.action == 'what-if')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for OIDC federated login
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Azure login (OIDC)
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # No secrets required: Azure SQL is provisioned with
+      # azureADOnlyAuthentication=true, so there is no admin password to pass.
+      - name: Deployment what-if
+        run: |
+          az deployment group what-if \
+            --resource-group "${RESOURCE_GROUP}" \
+            --template-file "${TEMPLATE_FILE}" \
+            --parameters "${PARAM_FILE}"
+
+  # ---------------------------------------------------------------------------
+  # 3. Deploy. Runs automatically on every push to main that touches infra,
+  #    and on a manual workflow_dispatch with action=deploy.
+  #
+  #    `environment: azure-prod` is LOAD-BEARING: it changes the OIDC token
+  #    subject to repo:<owner>/<repo>:environment:azure-prod, which is the
+  #    subject the `gh-petrovisor-env-azure-prod` federated credential matches.
+  #    Removing it breaks Azure login. It also records every deployment in the
+  #    repo's environment history for audit.
+  #
+  #    Deployment is INCREMENTAL (the az default). Never add --mode Complete:
+  #    the resource group contains resources not managed by main.bicep (e.g.
+  #    acrpetrovisor), and Complete mode would delete them.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy to rg-petrovisor-cus01
+    needs: validate
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy')
+    runs-on: ubuntu-latest
+    environment: azure-prod
+    permissions:
+      contents: read
+      id-token: write # required for OIDC federated login
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Azure login (OIDC)
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Logged for audit so the run record shows what the deploy was about to
+      # change. Read-only; does not gate the deploy.
+      - name: What-if preview (audit log)
+        continue-on-error: true
+        run: |
+          az deployment group what-if \
+            --resource-group "${RESOURCE_GROUP}" \
+            --template-file "${TEMPLATE_FILE}" \
+            --parameters "${PARAM_FILE}"
+
+      # No secrets required: Azure SQL uses Entra-only authentication.
+      - name: Deploy Bicep to resource group (incremental)
+        run: |
+          az deployment group create \
+            --name "petrovisor-$(date -u +%Y%m%d%H%M%S)" \
+            --resource-group "${RESOURCE_GROUP}" \
+            --mode Incremental \
+            --template-file "${TEMPLATE_FILE}" \
+            --parameters "${PARAM_FILE}"
