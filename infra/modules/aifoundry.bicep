@@ -45,6 +45,13 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2026-05-01' = {
   name: 'ask-petro-project'
   parent: foundry
   location: location
+  // Required in addition to the parent account's identity: the RP rejects
+  // project creation with "Unsupported configuration. To create projects,
+  // you must enable a managed identity on your resource" unless the project
+  // resource itself also carries its own identity block.
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     displayName: 'ask-petro-project'
     description: 'Microsoft Foundry project for Ask PetroVisor.'
