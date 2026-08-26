@@ -35,6 +35,12 @@ param nameSuffix string = 'cus01'
 @description('Container image reference for the backend API, e.g. myregistry.azurecr.io/petrovisorlite-api:latest')
 param backendImage string
 
+@description('CORS allowed origins for the backend API.')
+param corsAllowedOrigins string = ''
+
+@description('Whether to seed demo data on backend startup.')
+param seedDemoData bool = false
+
 @description('SKU for the Static Web App: "Standard" (custom auth/backends/private endpoints) or "Free" (cost-saving demo alternative).')
 param staticWebAppSkuName string = 'Standard'
 
@@ -51,6 +57,12 @@ param sqlAadAdminObjectId string
 @description('Azure AD login/display name of the SQL AAD admin.')
 param sqlAadAdminLoginName string
 
+@description('Model name to deploy in Microsoft Foundry.')
+param foundryModelName string = 'gpt-5.4-mini'
+
+@description('Version of the Microsoft Foundry model to deploy.')
+param foundryModelVersion string = '2026-03-17'
+
 var tenantId = subscription().tenantId
 
 // CAF-style names, fixed for the rg-petrovisor-cus01 deployment target.
@@ -64,6 +76,7 @@ var containerAppsEnvName = 'cae-${projectName}-${nameSuffix}'
 var backendAppName = 'ca-${projectName}-api-${nameSuffix}'
 var staticWebAppName = 'stapp-${projectName}-web-${nameSuffix}'
 var logAnalyticsName = 'law-${projectName}-${nameSuffix}'
+var foundryName = 'aif-${projectName}-${nameSuffix}'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsName
@@ -114,10 +127,23 @@ module containerApps 'modules/containerapps.bicep' = {
     logAnalyticsWorkspaceId: logAnalytics.id
     backendAppName: backendAppName
     backendImage: backendImage
+    corsAllowedOrigins: corsAllowedOrigins
+    seedDemoData: seedDemoData
     userAssignedIdentityId: identity.outputs.id
     keyVaultUri: keyVault.outputs.uri
     sqlServerFqdn: sql.outputs.sqlServerFqdn
     sqlDatabaseName: sql.outputs.sqlDatabaseName
+  }
+}
+
+module aifoundry 'modules/aifoundry.bicep' = {
+  name: 'aifoundry-deploy'
+  params: {
+    location: location
+    foundryName: foundryName
+    principalId: containerApps.outputs.backendSystemAssignedPrincipalId
+    modelName: foundryModelName
+    modelVersion: foundryModelVersion
   }
 }
 
@@ -137,3 +163,5 @@ output sqlServerFqdn string = sql.outputs.sqlServerFqdn
 output backendUrl string = 'https://${containerApps.outputs.backendFqdn}'
 output staticWebAppDefaultHostname string = staticWebApp.outputs.defaultHostname
 output backendSystemAssignedPrincipalId string = containerApps.outputs.backendSystemAssignedPrincipalId
+output foundryEndpoint string = aifoundry.outputs.endpoint
+output foundryDeploymentName string = aifoundry.outputs.deploymentName
