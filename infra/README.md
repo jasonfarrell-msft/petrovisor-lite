@@ -383,16 +383,16 @@ and Complete mode would delete them.
 # Read-only preview (safe, no cost):
 gh workflow run deploy-infra.yml -f action=what-if
 
-# Real deployment (costs money — requires typed confirmation):
+# Real deployment (costs money — requires explicit user approval):
 gh workflow run deploy-infra.yml \
-  -f action=deploy \
-  -f confirm=rg-petrovisor-cus01
+  -f action=deploy
 
 gh run watch
 ```
 
 Or from the GitHub UI: **Actions → Deploy Infra (Azure) → Run workflow**,
-pick `deploy`, and type `rg-petrovisor-cus01` into the confirm box.
+pick `deploy` only after explicit user cost approval is recorded in the
+deployment task.
 
 ### Reproducing the identity setup
 
