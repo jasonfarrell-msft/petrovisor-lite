@@ -12,7 +12,7 @@ param foundryName string
 param principalId string
 
 @description('Model name to deploy.')
-param modelName string = 'gpt-5.4-mini'
+param modelName string = 'gpt-4o-mini'
 
 @description('Version of the model to deploy.')
 param modelVersion string = '2026-03-17'
@@ -21,7 +21,7 @@ param modelVersion string = '2026-03-17'
 param capacity int = 10
 
 @description('Name clients use to address the model deployment.')
-param deploymentName string = 'gpt-5.4-mini'
+param deploymentName string = 'gpt-4o-mini'
 
 resource foundry 'Microsoft.CognitiveServices/accounts@2026-05-01' = {
   name: foundryName

@@ -20,6 +20,15 @@
     "staticWebAppSkuName": {
       "value": "Standard"
     },
+    "aiFoundryModelName": {
+      "value": "gpt-4o-mini"
+    },
+    "aiFoundryModelVersion": {
+      "value": "2024-07-18"
+    },
+    "aiFoundryCapacity": {
+      "value": 10
+    },
     "sqlAdministratorLogin": {
       "value": "pvliteadmin"
     },
