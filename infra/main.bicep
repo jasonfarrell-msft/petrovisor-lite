@@ -12,6 +12,7 @@
 //   - Azure SQL (server + database), AAD admin configured, MI added as DB user out-of-band
 //   - Log Analytics workspace (required by Container Apps environment)
 //   - Container Apps environment + backend API container app
+//   - Azure AI Foundry account + model deployment for Ask PetroVisor
 //   - Azure Static Web App (frontend — Blazor WebAssembly static build)
 //
 // All API versions below reflect this author's best knowledge of latest GA
@@ -57,11 +58,14 @@ param sqlAadAdminObjectId string
 @description('Azure AD login/display name of the SQL AAD admin.')
 param sqlAadAdminLoginName string
 
-@description('Model name to deploy in Microsoft Foundry.')
-param foundryModelName string = 'gpt-5.4-mini'
+@description('Model name to deploy in Azure AI Foundry.')
+param aiFoundryModelName string = 'gpt-4o-mini'
 
-@description('Version of the Microsoft Foundry model to deploy.')
-param foundryModelVersion string = '2026-03-17'
+@description('Version of the Azure AI Foundry model to deploy.')
+param aiFoundryModelVersion string
+
+@description('Azure AI Foundry deployment capacity in thousands of tokens per minute.')
+param aiFoundryCapacity int = 10
 
 var tenantId = subscription().tenantId
 
@@ -76,7 +80,7 @@ var containerAppsEnvName = 'cae-${projectName}-${nameSuffix}'
 var backendAppName = 'ca-${projectName}-api-${nameSuffix}'
 var staticWebAppName = 'stapp-${projectName}-web-${nameSuffix}'
 var logAnalyticsName = 'law-${projectName}-${nameSuffix}'
-var foundryName = 'aif-${projectName}-${nameSuffix}'
+var aiFoundryName = 'aif-${projectName}-${nameSuffix}'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsName
@@ -140,10 +144,12 @@ module aifoundry 'modules/aifoundry.bicep' = {
   name: 'aifoundry-deploy'
   params: {
     location: location
-    foundryName: foundryName
+    foundryName: aiFoundryName
     principalId: containerApps.outputs.backendSystemAssignedPrincipalId
-    modelName: foundryModelName
-    modelVersion: foundryModelVersion
+    modelName: aiFoundryModelName
+    modelVersion: aiFoundryModelVersion
+    capacity: aiFoundryCapacity
+    deploymentName: aiFoundryModelName
   }
 }
 
@@ -163,5 +169,5 @@ output sqlServerFqdn string = sql.outputs.sqlServerFqdn
 output backendUrl string = 'https://${containerApps.outputs.backendFqdn}'
 output staticWebAppDefaultHostname string = staticWebApp.outputs.defaultHostname
 output backendSystemAssignedPrincipalId string = containerApps.outputs.backendSystemAssignedPrincipalId
-output foundryEndpoint string = aifoundry.outputs.endpoint
-output foundryDeploymentName string = aifoundry.outputs.deploymentName
+output aiFoundryEndpoint string = aifoundry.outputs.endpoint
+output aiFoundryDeploymentName string = aifoundry.outputs.deploymentName

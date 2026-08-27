@@ -27,6 +27,9 @@ This folder provisions the Azure footprint for PetroVisor Lite:
   run once out-of-band/via migration — not part of this Bicep)
 - Log Analytics workspace (required by the Container Apps environment for logs)
 - Azure Container Apps environment + backend API Container App (`ca-petrovisor-api-cus01`)
+- **Azure AI Foundry** account (`aif-petrovisor-cus01`) with an Ask PetroVisor
+  model deployment. The backend Container App's system-assigned Managed Identity
+  is granted access; no API keys or key-based auth are introduced.
 - **Azure Static Web App** (`stapp-petrovisor-web-cus01`) — hosts the Blazor
   WebAssembly frontend as a static build (replaces the earlier frontend
   Container App design now that the frontend is Blazor WASM, not a
@@ -44,6 +47,7 @@ This folder provisions the Azure footprint for PetroVisor Lite:
 | Log Analytics workspace | `law-petrovisor-cus01` | |
 | Container Apps environment | `cae-petrovisor-cus01` | |
 | Container App (backend API) | `ca-petrovisor-api-cus01` | Image parameterized via `backendImage` |
+| Azure AI Foundry account | `aif-petrovisor-cus01` | Ask PetroVisor model deployment; backend system-assigned MI access only |
 | Static Web App (frontend) | `stapp-petrovisor-web-cus01` | Blazor WASM static build |
 
 ## Layout
@@ -58,9 +62,24 @@ infra/
     ├── identity.bicep         # User-Assigned Managed Identity
     ├── keyvault.bicep         # Key Vault + RBAC role assignment
     ├── sql.bicep              # SQL server + database + firewall rule
+    ├── aifoundry.bicep        # Azure AI Foundry account + model deployment
     ├── containerapps.bicep    # Container Apps environment + backend API app
     └── staticwebapp.bicep     # Static Web App (frontend, Blazor WASM)
 ```
+
+## Azure AI Foundry for Ask PetroVisor
+
+The `aifoundry` module provisions the Azure AI Foundry account
+(`aif-petrovisor-cus01`), project, and model deployment used by Ask
+PetroVisor. The top-level template wires the backend Container App's
+**system-assigned** principal ID into the module so the backend authenticates
+with Managed Identity only. Local/key-based authentication is disabled on the
+account, and no model keys or secrets are emitted by this scaffold.
+
+**Cost approval gate:** this resource and its model deployment are new Azure
+spend, not reuse of existing infrastructure. Any deployment that creates or
+changes the Foundry account/model capacity requires explicit user cost approval
+tracked in the deployment task before applying.
 
 ## Static Web Apps regional note
 
