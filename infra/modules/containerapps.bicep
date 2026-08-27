@@ -12,6 +12,12 @@ param backendAppName string
 param backendImage string
 param backendTargetPort int = 8080
 
+@description('CORS allowed origins for the backend API (e.g. the Static Web App URL).')
+param corsAllowedOrigins string = ''
+
+@description('Whether to seed demo data on startup.')
+param seedDemoData bool = false
+
 param userAssignedIdentityId string
 param keyVaultUri string
 param sqlServerFqdn string
@@ -80,6 +86,8 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'KEYVAULT_URI', value: keyVaultUri }
             { name: 'SQL_SERVER_FQDN', value: sqlServerFqdn }
             { name: 'SQL_DATABASE_NAME', value: sqlDatabaseName }
+            { name: 'CORS_ALLOWED_ORIGINS', value: corsAllowedOrigins }
+            { name: 'SEED_DEMO_DATA', value: seedDemoData ? 'true' : 'false' }
           ]
         }
       ]

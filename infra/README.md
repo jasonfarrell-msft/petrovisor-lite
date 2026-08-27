@@ -1,6 +1,13 @@
 # PetroVisor Lite — Azure Infra Scaffold (Bicep)
 
-**Status: scaffolding only. Nothing here has been deployed.**
+**Status: deployed.** The resources below exist in `rg-petrovisor-cus01`
+(first deployed 2026-08-25). CI/CD is wired via GitHub Actions using OIDC —
+see [CI/CD deployment](#cicd-deployment-github-actions--oidc) below.
+
+> ⚠️ **Continuous delivery is live.** Any push to `main` that touches
+> `infra/**` (or the workflow file) deploys to `rg-petrovisor-cus01`
+> automatically. Pull requests run validation + `what-if` only and never
+> deploy.
 
 ## Deployment target
 
@@ -175,31 +182,221 @@ re-run idempotently against Azure SQL, or invoked as a one-time
 post-deployment step (e.g. a Container Apps Job) rather than auto-seeding on
 every startup.
 
-## Prerequisites (for when this is actually deployed — not yet)
+## Manual deployment (local, for break-glass / debugging)
+
+The resource group already exists — do not recreate it.
 
 ```bash
 az login
-az account set --subscription <subscription-id>
-az group create --name rg-petrovisor-cus01 --location centralus
-```
+az account set --subscription bb4b2781-6739-4fa1-994e-4ad6ce55c59c
 
-## Example deployment command (NOT run by this scaffold)
+# Read-only preview of what would change:
+az deployment group what-if \
+  --resource-group rg-petrovisor-cus01 \
+  --template-file main.bicep \
+  --parameters rg-petrovisor-cus01.bicepparam
 
-```bash
+# Actually apply:
 az deployment group create \
   --resource-group rg-petrovisor-cus01 \
   --template-file main.bicep \
-  --parameters rg-petrovisor-cus01.bicepparam \
-  --parameters sqlAdministratorLoginPassword="$(az keyvault secret show \
-      --vault-name <bootstrap-kv> --name sql-admin-password --query value -o tsv)" \
-  --parameters backendImage=<acr>.azurecr.io/petrovisorlite-api:<tag>
+  --parameters rg-petrovisor-cus01.bicepparam
 ```
 
-(Or use `main.parameters.json` in place of the `.bicepparam` file — both are
-provided, targeting the same `rg-petrovisor-cus01` / `centralus` values.)
+**No password parameter is required.** The SQL logical server is provisioned
+with `azureADOnlyAuthentication: true`, so there is no SQL admin password to
+supply, store, or rotate. Authentication is Entra ID only.
+
+(`main.parameters.json` may be used in place of the `.bicepparam` file — both
+target the same `rg-petrovisor-cus01` / `centralus` values.)
+
+---
+
+## CI/CD deployment (GitHub Actions + OIDC)
+
+Workflow: [`.github/workflows/deploy-infra.yml`](../.github/workflows/deploy-infra.yml)
+
+### Deploy identity
+
+Deployments authenticate with **OpenID Connect / workload identity
+federation**. There is **no client secret, no password, and no
+`AZURE_CREDENTIALS` JSON blob** anywhere in this repository, in GitHub
+secrets, or on the app registration. GitHub mints a short-lived OIDC token
+per job and Entra ID exchanges it for an Azure access token.
+
+| | |
+|---|---|
+| App registration / SP | `sp-petrovisor-github-deploy` |
+| Application (client) ID | `5260acff-ef5b-4c48-8bee-7fb94d859482` |
+| SP object ID | `c5d7417a-b0b1-4705-87be-697295db4c70` |
+| Tenant ID | `e90bd921-0e00-4e6f-b87c-713670ee27bf` |
+| Subscription | `bb4b2781-6739-4fa1-994e-4ad6ce55c59c` (`TSJasonFarrell-Sub`) |
+| Client secrets | **none** (verify: `az ad app credential list --id 5260acff-ef5b-4c48-8bee-7fb94d859482` returns `[]`) |
+
+### Role assignment scope
+
+Exactly one role assignment, deliberately narrow:
+
+- **Role:** `Contributor` (not Owner — the identity cannot grant RBAC or
+  modify role assignments)
+- **Scope:** `/subscriptions/bb4b2781-6739-4fa1-994e-4ad6ce55c59c/resourceGroups/rg-petrovisor-cus01`
+
+Scope is the **resource group only**, never the subscription. The identity
+cannot see or touch anything outside `rg-petrovisor-cus01`.
+
+### Federated credentials
+
+All three use issuer `https://token.actions.githubusercontent.com` and
+audience `api://AzureADTokenExchange`, restricted to the repo
+`jasonfarrell-msft/petrovisor-lite`:
+
+| Name | Subject | Used by |
+|---|---|---|
+| `gh-petrovisor-env-azure-prod` | `repo:jasonfarrell-msft/petrovisor-lite:environment:azure-prod` | the `deploy` job (push to `main`, and dispatch with action=deploy) |
+| `gh-petrovisor-pr` | `repo:jasonfarrell-msft/petrovisor-lite:pull_request` | the `what-if` job on pull requests |
+| `gh-petrovisor-main` | `repo:jasonfarrell-msft/petrovisor-lite:ref:refs/heads/main` | the `what-if` job on a `workflow_dispatch` from `main` |
+
+**Why the `environment:` credential covers push-to-main.** GitHub's OIDC
+`sub` claim is determined by the *job*, not the trigger: when a job declares
+`environment: azure-prod`, the subject becomes
+`repo:<owner>/<repo>:environment:<name>` and the `ref:` form is **not** used.
+So a push to `main` reaching the `deploy` job still presents
+`...:environment:azure-prod` and matches `gh-petrovisor-env-azure-prod`.
+This is why `environment: azure-prod` on the deploy job is load-bearing —
+removing it would switch the subject to `ref:refs/heads/main` and change which
+credential is exercised.
+
+The `gh-petrovisor-main` credential remains useful for the manual
+`workflow_dispatch` + `what-if` path, whose job has **no** `environment:` and
+therefore presents `ref:refs/heads/main`.
+
+Repository-level OIDC subject customization is at its default
+(`use_default: true`), so no custom claim template alters these subjects.
+
+### Repository variables (not secrets)
+
+```
+AZURE_CLIENT_ID        5260acff-ef5b-4c48-8bee-7fb94d859482
+AZURE_TENANT_ID        e90bd921-0e00-4e6f-b87c-713670ee27bf
+AZURE_SUBSCRIPTION_ID  bb4b2781-6739-4fa1-994e-4ad6ce55c59c
+```
+
+These are stored as **variables** (`gh variable set`), not secrets. None are
+credentials — they are public identifiers that are useless without a
+federated token from this specific repo. Storing them as variables keeps them
+readable in logs and in the UI, which makes misconfiguration obvious instead
+of silent. The actual security boundary is the federated credential subject,
+not the confidentiality of these GUIDs.
+
+**This workflow consumes zero GitHub secrets.**
+
+### Trigger model — continuous delivery on `main`
+
+**Any change merged/pushed to `main` that touches `infra/**` deploys
+automatically.** Pull requests run a read-only validation pipeline and can
+never deploy.
+
+| Trigger | What runs | Touches Azure? |
+|---|---|---|
+| Pull request targeting `main` | `bicep build` + `build-params` + `what-if` | No — read-only |
+| Push to `main` | `bicep build` + `build-params`, then `deployment group create` (incremental) | **Yes — deploys** |
+| `workflow_dispatch`, action = `what-if` (default) | `bicep build` + `what-if` | No — read-only |
+| `workflow_dispatch`, action = `deploy` | `bicep build`, then `deployment group create` | **Yes — deploys** |
+
+Job guards:
+
+- `what-if` job: `github.event_name == 'pull_request' || (workflow_dispatch && inputs.action == 'what-if')`
+- `deploy` job: `github.event_name == 'push' || (workflow_dispatch && inputs.action == 'deploy')`
+
+A `pull_request` event can never satisfy the `deploy` guard, so **a PR can
+never change Azure.** The `push` trigger is already restricted to `main` by
+`on.push.branches`, so no other branch deploys.
+
+The deploy job runs a `what-if` first purely as an **audit log** — it is
+`continue-on-error: true` and does not gate the deployment.
+
+> **Previous behavior (superseded 2026-08-26).** This workflow used to require
+> a manual `workflow_dispatch` with the operator typing `rg-petrovisor-cus01`
+> into a `confirm` input, and pushes to `main` only ran `what-if`. That cost
+> gate — along with the `confirm` input and the `confirmation-check` job — was
+> removed at the user's explicit direction in favor of continuous delivery.
+
+The deploy job targets the `azure-prod` GitHub Environment, which records
+every deployment in the repo's environment history for audit — and, critically,
+is what makes the OIDC subject match the federated credential (see below).
+
+> **Note on environment protection rules.** A GitHub Environment
+> *required-reviewer* rule on `azure-prod` is not available: required reviewers
+> and wait timers are not offered for private repositories on this account's
+> billing plan. **If this repo is made public or the plan is upgraded, adding a
+> required reviewer to `azure-prod` would reintroduce a human approval step in
+> front of the auto-deploy** without changing the workflow:
+>
+> ```bash
+> gh api --method PUT repos/jasonfarrell-msft/petrovisor-lite/environments/azure-prod \
+>   --input - <<< '{"reviewers":[{"type":"User","id":287220}],"prevent_self_review":true}'
+> ```
+
+### Deployment mode
+
+Deployments use **incremental** mode (the `az` default, stated explicitly in
+the workflow). `--mode Complete` must **never** be used: the resource group
+contains resources that `main.bicep` does not manage (notably `acrpetrovisor`),
+and Complete mode would delete them.
+
+### Supply-chain hardening
+
+- All third-party actions are pinned to a **full commit SHA**, with the
+  human-readable tag in a trailing comment:
+  - `actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` (v5)
+  - `azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6` (v2)
+- Workflow-level `permissions:` default to `contents: read`.
+- `id-token: write` is granted **per job**, only on the two jobs that call
+  `azure/login`. The `bicep build` and confirmation jobs never receive it.
+- `persist-credentials: false` on every checkout, so the `GITHUB_TOKEN` is not
+  left in `.git/config` for later steps to pick up.
+- `concurrency` with `cancel-in-progress: false` prevents two deployments from
+  racing against the same resource group.
+
+### Triggering a deployment
+
+```bash
+# Read-only preview (safe, no cost):
+gh workflow run deploy-infra.yml -f action=what-if
+
+# Real deployment (costs money — requires typed confirmation):
+gh workflow run deploy-infra.yml \
+  -f action=deploy \
+  -f confirm=rg-petrovisor-cus01
+
+gh run watch
+```
+
+Or from the GitHub UI: **Actions → Deploy Infra (Azure) → Run workflow**,
+pick `deploy`, and type `rg-petrovisor-cus01` into the confirm box.
+
+### Reproducing the identity setup
+
+```bash
+az ad app create --display-name sp-petrovisor-github-deploy --sign-in-audience AzureADMyOrg
+az ad sp create --id <appId>
+az role assignment create --assignee-object-id <spObjectId> \
+  --assignee-principal-type ServicePrincipal --role Contributor \
+  --scope /subscriptions/bb4b2781-6739-4fa1-994e-4ad6ce55c59c/resourceGroups/rg-petrovisor-cus01
+az ad app federated-credential create --id <appId> --parameters '{
+  "name":"gh-petrovisor-main",
+  "issuer":"https://token.actions.githubusercontent.com",
+  "subject":"repo:jasonfarrell-msft/petrovisor-lite:ref:refs/heads/main",
+  "audiences":["api://AzureADTokenExchange"]}'
+```
 
 ## Follow-ups for a future deployment pass
 
+- Remove the now-unused `sqlAdministratorLogin` / `sqlAdministratorLoginPassword`
+  parameters from `main.bicep` (they trigger `no-unused-params` linter warnings;
+  the SQL module uses Entra-only auth and never consumes them).
+- Add a required-reviewer protection rule to the `azure-prod` GitHub Environment
+  if/when the billing plan supports it (see the CI/CD section).
 - Confirm exact GA API versions (see table above) against current Azure docs.
 - Reconcile the Blazor WASM publish path once Luke's Razor→WASM pivot lands
   (`.squad/decisions/inbox/luke-blazor-wasm-pivot.md` or `.squad/decisions.md`).
