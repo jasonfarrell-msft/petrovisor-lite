@@ -59,7 +59,7 @@ param sqlAadAdminObjectId string
 param sqlAadAdminLoginName string
 
 @description('Model name to deploy in Azure AI Foundry.')
-param aiFoundryModelName string = 'gpt-4o-mini'
+param aiFoundryModelName string = 'gpt-5.4'
 
 @description('Version of the Azure AI Foundry model to deploy.')
 param aiFoundryModelVersion string
