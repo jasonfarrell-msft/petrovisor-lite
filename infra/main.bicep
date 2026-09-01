@@ -82,6 +82,28 @@ var staticWebAppName = 'stapp-${projectName}-web-${nameSuffix}'
 var logAnalyticsName = 'law-${projectName}-${nameSuffix}'
 var aiFoundryName = 'aif-${projectName}-${nameSuffix}'
 
+// Module-ordering note (containerApps <-> aiFoundry):
+// The backend container app needs the AI Foundry endpoint + deployment name
+// as env vars, while the aiFoundry module needs the container app's
+// system-assigned principal ID for its role assignment. Chaining both as
+// module-output dependencies would create a circular module dependency,
+// which `az bicep build` rejects.
+//
+// Resolution: both values consumed by containerApps below are deterministic
+// given inputs already known in this file, so they're computed here as
+// plain variables instead of being read from `aifoundry.outputs`:
+//   - the model deployment name is just `aiFoundryModelName`, the same
+//     literal passed to the aifoundry module's `deploymentName` param; and
+//   - the account endpoint follows Cognitive Services' standard
+//     `https://<customSubDomainName>.cognitiveservices.azure.com/` pattern,
+//     and `customSubDomainName` is set to `aiFoundryName` in aifoundry.bicep.
+// This lets containerApps deploy (and expose these env vars) without
+// depending on the aifoundry module's outputs, so the original
+// containerApps-before-aiFoundry ordering (required so aiFoundry can assign
+// the role to containerApps' principal ID) is preserved with no cycle.
+var aiFoundryEndpoint = 'https://${aiFoundryName}.cognitiveservices.azure.com/'
+var aiFoundryDeploymentName = aiFoundryModelName
+
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsName
   location: location
@@ -137,6 +159,8 @@ module containerApps 'modules/containerapps.bicep' = {
     keyVaultUri: keyVault.outputs.uri
     sqlServerFqdn: sql.outputs.sqlServerFqdn
     sqlDatabaseName: sql.outputs.sqlDatabaseName
+    aiFoundryEndpoint: aiFoundryEndpoint
+    aiFoundryDeploymentName: aiFoundryDeploymentName
   }
 }
 

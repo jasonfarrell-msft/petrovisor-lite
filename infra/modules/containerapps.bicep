@@ -23,6 +23,12 @@ param keyVaultUri string
 param sqlServerFqdn string
 param sqlDatabaseName string
 
+@description('Azure AI Foundry account endpoint (resource identifier, not a secret — auth is via Managed Identity).')
+param aiFoundryEndpoint string
+
+@description('Azure AI Foundry model deployment name (resource identifier, not a secret).')
+param aiFoundryDeploymentName string
+
 resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: environmentName
   location: location
@@ -86,6 +92,8 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'KEYVAULT_URI', value: keyVaultUri }
             { name: 'SQL_SERVER_FQDN', value: sqlServerFqdn }
             { name: 'SQL_DATABASE_NAME', value: sqlDatabaseName }
+            { name: 'AI_FOUNDRY_ENDPOINT', value: aiFoundryEndpoint }
+            { name: 'AI_FOUNDRY_DEPLOYMENT', value: aiFoundryDeploymentName }
             { name: 'CORS_ALLOWED_ORIGINS', value: corsAllowedOrigins }
             { name: 'SEED_DEMO_DATA', value: seedDemoData ? 'true' : 'false' }
           ]
