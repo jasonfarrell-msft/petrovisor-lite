@@ -11,6 +11,7 @@ public static class AuthenticationExtensions
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var effectiveKey = JwtOptions.GetEffectiveKeyBytes(jwtOptions.Key);
 
         services.AddAuthentication(options =>
             {
@@ -19,10 +20,6 @@ public static class AuthenticationExtensions
             })
             .AddJwtBearer(options =>
             {
-                // Key may be empty at startup time before configuration is bound from
-                // User Secrets/Key Vault; a random fallback key means validation simply
-                // fails closed (no tokens will validate) rather than throwing at startup.
-                var keyBytes = Encoding.UTF8.GetBytes(string.IsNullOrEmpty(jwtOptions.Key) ? Guid.NewGuid().ToString() : jwtOptions.Key);
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -30,7 +27,7 @@ public static class AuthenticationExtensions
                     ValidateAudience = true,
                     ValidAudience = jwtOptions.Audience,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+                    IssuerSigningKey = new SymmetricSecurityKey(effectiveKey),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromMinutes(1),
                 };

@@ -16,12 +16,7 @@ public class JwtTokenService : IJwtTokenService
 
     public string CreateToken(string userId, string userName, string email, IEnumerable<string> roles)
     {
-        if (string.IsNullOrWhiteSpace(_options.Key))
-        {
-            throw new InvalidOperationException(
-                "Jwt:Key is not configured. Set it via 'dotnet user-secrets set \"Jwt:Key\" \"<random-secret>\"' " +
-                "locally, or via an environment variable / Azure Key Vault in production.");
-        }
+        var keyBytes = JwtOptions.GetEffectiveKeyBytes(_options.Key);
 
         var claims = new List<Claim>
         {
@@ -32,7 +27,7 @@ public class JwtTokenService : IJwtTokenService
         };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
+        var key = new SymmetricSecurityKey(keyBytes);
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
