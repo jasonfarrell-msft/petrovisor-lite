@@ -46,8 +46,9 @@ public class DashboardComponentTests : TestContext
         Services.AddSingleton(apiClient);
 
         var cut = RenderComponent<Dashboard>();
-        cut.Find("input[type=text]").Input("Can you explain the weather?");
-        cut.FindAll("button").Last().Click();
+        cut.FindAll("button").Single(button => button.TextContent.Contains("Ask PetroVisor")).Click();
+        cut.Find("aside input[type=text]").Input("Can you explain the weather?");
+        cut.FindAll("aside button").Last().Click();
 
         Assert.Contains("I can't answer that yet.", cut.Markup);
         Assert.Contains("Try asking about top wells by decline rate", cut.Markup);
@@ -89,11 +90,50 @@ public class DashboardComponentTests : TestContext
         Services.AddSingleton(apiClient);
 
         var cut = RenderComponent<Dashboard>();
-        cut.Find("input[type=text]").Input("Which wells are declining fastest?");
-        cut.FindAll("button").Last().Click();
+        cut.FindAll("button").Single(button => button.TextContent.Contains("Ask PetroVisor")).Click();
+        cut.Find("aside input[type=text]").Input("Which wells are declining fastest?");
+        cut.FindAll("aside button").Last().Click();
 
         Assert.Contains("Top 2 wells by decline rate.", cut.Markup);
         Assert.Contains("chat-chart-", cut.Markup);
+    }
+
+    [Fact]
+    public void DashboardPage_OpensAskPetrovisorFlyoutFromTheRight()
+    {
+        var apiClient = CreateApiClient(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+            {
+                "wellCount": 3,
+                "facilityCount": 2,
+                "totalOilBbl30d": 1000,
+                "totalGasMcf30d": 500,
+                "fieldDailyProduction": [],
+                "artificialLiftBreakdown": [],
+                "topWellsByDecline": []
+            }
+            """, Encoding.UTF8, "application/json")
+        }, new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+            {
+                "intent": 0,
+                "isSupported": false,
+                "message": "I can't answer that yet.",
+                "data": {}
+            }
+            """, Encoding.UTF8, "application/json")
+        });
+
+        Services.AddSingleton(apiClient);
+
+        var cut = RenderComponent<Dashboard>();
+        cut.FindAll("button").Single(button => button.TextContent.Contains("Ask PetroVisor")).Click();
+
+        Assert.Contains("AI assistant", cut.Markup);
+        Assert.Contains("Ask about decline, lift status, or production trends", cut.Markup);
+        Assert.Contains("ask-petrovisor-drawer", cut.Markup);
     }
 
     private static PetroVisorApiClient CreateApiClient(HttpResponseMessage dashboardResponse, HttpResponseMessage assistantResponse)
