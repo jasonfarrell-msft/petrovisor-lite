@@ -1,13 +1,12 @@
 # PetroVisor Lite — Azure Infra Scaffold (Bicep)
 
-**Status: deployed.** The resources below exist in `rg-petrovisor-cus01`
-(first deployed 2026-08-25). CI/CD is wired via GitHub Actions using OIDC —
-see [CI/CD deployment](#cicd-deployment-github-actions--oidc) below.
+**Status: pending operator deployment.** This repository does not run Azure
+deployments. CI/CD is wired via GitHub Actions using OIDC — see
+[CI/CD deployment](#cicd-deployment-github-actions--oidc) below.
 
-> ⚠️ **Continuous delivery is live.** Any push to `main` that touches
-> `infra/**` (or the workflow file) deploys to `rg-petrovisor-cus01`
-> automatically. Pull requests run validation + `what-if` only and never
-> deploy.
+> ⚠️ **Deployment is approval-gated.** Pushes to `main` and pull requests run
+> validation + `what-if` only. A deployment can be started only manually from
+> `main`, after the cost estimate has been explicitly approved.
 
 ## Deployment target
 
@@ -80,6 +79,71 @@ account, and no model keys or secrets are emitted by this scaffold.
 spend, not reuse of existing infrastructure. Any deployment that creates or
 changes the Foundry account/model capacity requires explicit user cost approval
 tracked in the deployment task before applying.
+
+### Deployment hand-off and smoke test
+
+This task cannot be completed from the repository alone: a human operator with
+access to the target subscription must obtain and post a monthly estimate for
+the `S0` account plus the `gpt-4o-mini` Global Standard deployment at capacity
+10, then wait for explicit approval in the deployment task. The estimate must
+use the current Central US rates and an expected monthly token volume; capacity
+10 is a throughput limit, not a monthly usage forecast. Do not run
+`az deployment group create` before that approval is recorded.
+
+After approval, the operator can deploy and capture the output values:
+
+```bash
+az deployment group create \
+  --resource-group rg-petrovisor-cus01 \
+  --template-file infra/main.bicep \
+  --parameters infra/rg-petrovisor-cus01.bicepparam
+
+ENDPOINT=$(az deployment group show \
+  --resource-group rg-petrovisor-cus01 \
+  --name <deployment-name> \
+  --query properties.outputs.aiFoundryEndpoint.value -o tsv)
+DEPLOYMENT=$(az deployment group show \
+  --resource-group rg-petrovisor-cus01 \
+  --name <deployment-name> \
+  --query properties.outputs.aiFoundryDeploymentName.value -o tsv)
+```
+
+Verify Managed Identity-only access and the backend role assignment before
+smoke testing:
+
+```bash
+az resource show \
+  --resource-group rg-petrovisor-cus01 \
+  --resource-type Microsoft.CognitiveServices/accounts \
+  --name aif-petrovisor-cus01 \
+  --query properties.disableLocalAuth -o tsv
+
+PRINCIPAL_ID=$(az containerapp show \
+  --resource-group rg-petrovisor-cus01 \
+  --name ca-petrovisor-api-cus01 \
+  --query identity.principalId -o tsv)
+az role assignment list \
+  --resource-group rg-petrovisor-cus01 \
+  --assignee "$PRINCIPAL_ID" \
+  --query "[?roleDefinitionId contains(@, '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')]" \
+  -o table
+```
+
+The first command must return `true`. A token-limited, key-free smoke call
+uses the Azure CLI credential and sends at most eight output tokens:
+
+```bash
+az rest \
+  --method post \
+  --url "${ENDPOINT%/}/openai/v1/chat/completions" \
+  --resource https://ai.azure.com \
+  --headers Content-Type=application/json \
+  --body "{\"model\":\"${DEPLOYMENT}\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with OK.\"}],\"max_tokens\":8,\"temperature\":0}"
+```
+
+Once the call succeeds, post the resulting endpoint and deployment name to
+work item #2. No key or `listKeys()` fallback is required because local auth
+is disabled and the backend already uses `DefaultAzureCredential`.
 
 ## Static Web Apps regional note
 
@@ -271,19 +335,18 @@ audience `api://AzureADTokenExchange`, restricted to the repo
 
 | Name | Subject | Used by |
 |---|---|---|
-| `gh-petrovisor-env-azure-prod` | `repo:jasonfarrell-msft/petrovisor-lite:environment:azure-prod` | the `deploy` job (push to `main`, and dispatch with action=deploy) |
+| `gh-petrovisor-env-azure-prod` | `repo:jasonfarrell-msft/petrovisor-lite:environment:azure-prod` | the `deploy` job (dispatch with action=deploy from `main`) |
 | `gh-petrovisor-pr` | `repo:jasonfarrell-msft/petrovisor-lite:pull_request` | the `what-if` job on pull requests |
 | `gh-petrovisor-main` | `repo:jasonfarrell-msft/petrovisor-lite:ref:refs/heads/main` | the `what-if` job on a `workflow_dispatch` from `main` |
 
-**Why the `environment:` credential covers push-to-main.** GitHub's OIDC
+**Why the `environment:` credential covers the deploy job.** GitHub's OIDC
 `sub` claim is determined by the *job*, not the trigger: when a job declares
 `environment: azure-prod`, the subject becomes
 `repo:<owner>/<repo>:environment:<name>` and the `ref:` form is **not** used.
-So a push to `main` reaching the `deploy` job still presents
-`...:environment:azure-prod` and matches `gh-petrovisor-env-azure-prod`.
-This is why `environment: azure-prod` on the deploy job is load-bearing —
-removing it would switch the subject to `ref:refs/heads/main` and change which
-credential is exercised.
+The deploy job therefore presents `...:environment:azure-prod` and matches
+`gh-petrovisor-env-azure-prod`. This is why `environment: azure-prod` on the
+deploy job is load-bearing — removing it would switch the subject to
+`ref:refs/heads/main` and change which credential is exercised.
 
 The `gh-petrovisor-main` credential remains useful for the manual
 `workflow_dispatch` + `what-if` path, whose job has **no** `environment:` and
@@ -309,36 +372,35 @@ not the confidentiality of these GUIDs.
 
 **This workflow consumes zero GitHub secrets.**
 
-### Trigger model — continuous delivery on `main`
+### Trigger model — approval-gated deployment on `main`
 
-**Any change merged/pushed to `main` that touches `infra/**` deploys
-automatically.** Pull requests run a read-only validation pipeline and can
-never deploy.
+**No push or pull request deploys automatically.** Changes merged/pushed to
+`main` run read-only validation; the deploy job is available only through a
+manual `workflow_dispatch` with `action=deploy` after explicit user cost
+approval is recorded in the deployment task.
 
 | Trigger | What runs | Touches Azure? |
 |---|---|---|
 | Pull request targeting `main` | `bicep build` + `build-params` + `what-if` | No — read-only |
-| Push to `main` | `bicep build` + `build-params`, then `deployment group create` (incremental) | **Yes — deploys** |
+| Push to `main` | `bicep build` + `build-params` + `what-if` | No — read-only |
 | `workflow_dispatch`, action = `what-if` (default) | `bicep build` + `what-if` | No — read-only |
-| `workflow_dispatch`, action = `deploy` | `bicep build`, then `deployment group create` | **Yes — deploys** |
+| `workflow_dispatch` from `main`, action = `deploy` | `bicep build`, then `deployment group create` | **Yes — after approval** |
 
 Job guards:
 
-- `what-if` job: `github.event_name == 'pull_request' || (workflow_dispatch && inputs.action == 'what-if')`
-- `deploy` job: `github.event_name == 'push' || (workflow_dispatch && inputs.action == 'deploy')`
+- `what-if` job: `github.event_name == 'push' || github.event_name == 'pull_request' || (workflow_dispatch && inputs.action == 'what-if')`
+- `deploy` job: `github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.action == 'deploy'`
 
-A `pull_request` event can never satisfy the `deploy` guard, so **a PR can
-never change Azure.** The `push` trigger is already restricted to `main` by
-`on.push.branches`, so no other branch deploys.
+A `pull_request` or `push` event can never satisfy the `deploy` guard, so
+**neither a PR nor a merge can change Azure.** Manual deployments are also
+restricted to `main`.
 
 The deploy job runs a `what-if` first purely as an **audit log** — it is
 `continue-on-error: true` and does not gate the deployment.
 
-> **Previous behavior (superseded 2026-08-26).** This workflow used to require
-> a manual `workflow_dispatch` with the operator typing `rg-petrovisor-cus01`
-> into a `confirm` input, and pushes to `main` only ran `what-if`. That cost
-> gate — along with the `confirm` input and the `confirmation-check` job — was
-> removed at the user's explicit direction in favor of continuous delivery.
+> **Approval requirement.** The deploy job intentionally remains manual. The
+> operator must confirm that the monthly estimate is posted and explicitly
+> approved in the deployment task before choosing `action=deploy`.
 
 The deploy job targets the `azure-prod` GitHub Environment, which records
 every deployment in the repo's environment history for audit — and, critically,
@@ -348,8 +410,8 @@ is what makes the OIDC subject match the federated credential (see below).
 > *required-reviewer* rule on `azure-prod` is not available: required reviewers
 > and wait timers are not offered for private repositories on this account's
 > billing plan. **If this repo is made public or the plan is upgraded, adding a
-> required reviewer to `azure-prod` would reintroduce a human approval step in
-> front of the auto-deploy** without changing the workflow:
+> required reviewer to `azure-prod` would add a second human approval step in
+> front of the manual deploy** without changing the workflow:
 >
 > ```bash
 > gh api --method PUT repos/jasonfarrell-msft/petrovisor-lite/environments/azure-prod \
