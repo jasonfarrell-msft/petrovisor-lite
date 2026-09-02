@@ -1,0 +1,83 @@
+name: Deploy Frontend (Azure Static Web Apps)
+
+# Deployment uses the repo secret SWA_DEPLOY_TOKEN, which contains the Azure
+# Static Web Apps deployment token for stapp-petrovisor-web-cus01.
+#
+# Trigger model:
+#   push to main (frontend/** changes) -> build + deploy (continuous delivery)
+#   pull_request                       -> build only. NEVER deploys.
+#   workflow_dispatch                  -> manual escape hatch; runs full deploy.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: petrovisor-frontend-prod
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Blazor frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore frontend/PetroVisorLite.Frontend.slnx
+
+      - name: Publish static assets
+        run: dotnet publish frontend/PetroVisorLite.Web/PetroVisorLite.Web.csproj -c Release -o frontend/publish
+
+  deploy:
+    name: Deploy to stapp-petrovisor-web-cus01
+    needs: build
+    if: ${{ secrets.SWA_DEPLOY_TOKEN != '' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    environment: azure-prod
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish static assets
+        run: dotnet publish frontend/PetroVisorLite.Web/PetroVisorLite.Web.csproj -c Release -o frontend/publish
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.SWA_DEPLOY_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          skip_app_build: true
+          app_location: frontend/publish
