@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using PetroVisorLite.Application.Analytics;
+using PetroVisorLite.Application.Assistant;
 using PetroVisorLite.Application.Interfaces;
 
 namespace PetroVisorLite.Application.DependencyInjection;
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProductionLossDetector, ProductionLossDetector>();
         services.AddScoped<IArtificialLiftMonitor, ArtificialLiftMonitor>();
         services.AddScoped<IKpiService, KpiService>();
+        services.AddScoped<IQueryOrchestrator, QueryOrchestrator>();
 
         return services;
     }

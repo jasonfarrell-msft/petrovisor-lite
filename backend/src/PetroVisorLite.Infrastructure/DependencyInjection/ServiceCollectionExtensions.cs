@@ -42,7 +42,10 @@ public static class ServiceCollectionExtensions
             {
                 options.Key = JwtOptions.ResolveKey(options.Key);
             });
+        services.AddOptions<AzureAiFoundryOptions>()
+            .Bind(configuration.GetSection(AzureAiFoundryOptions.SectionName));
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddHttpClient<IQueryIntentClassifier, AzureAiFoundryQueryIntentClassifier>();
 
         services.AddScoped<IWellRepository, WellRepository>();
         services.AddScoped<IFacilityRepository, FacilityRepository>();
