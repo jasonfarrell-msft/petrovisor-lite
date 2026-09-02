@@ -111,5 +111,6 @@ jobs:
             --name "${CONTAINER_APP_NAME}" \
             --resource-group "${RESOURCE_GROUP}" \
             --image "${IMAGE_REF}" \
-            --min-replicas 1
+            --min-replicas 1 \
+            --set-env-vars "IMAGE_NAME=${IMAGE_REF}"
           echo "Deployed ${IMAGE_REF} to ${CONTAINER_APP_NAME}"

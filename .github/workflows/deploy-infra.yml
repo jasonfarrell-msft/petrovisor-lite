@@ -154,12 +154,35 @@ jobs:
             --template-file "${TEMPLATE_FILE}" \
             --parameters "${PARAM_FILE}"
 
+      # Resolve the image that is currently running in the Container App so that
+      # an infra-only deployment never rolls back the API to the stale version
+      # pinned in the .bicepparam file.
+      - name: Resolve current backend image
+        id: current-image
+        run: |
+          CURRENT_IMAGE=$(az containerapp show \
+            --name ca-petrovisor-api-cus01 \
+            --resource-group "${RESOURCE_GROUP}" \
+            --query "properties.template.containers[0].image" \
+            --output tsv 2>/dev/null || echo "")
+          if [ -z "${CURRENT_IMAGE}" ]; then
+            echo "No existing container app found; using param file image."
+          else
+            echo "Current image: ${CURRENT_IMAGE}"
+          fi
+          echo "image=${CURRENT_IMAGE}" >> "$GITHUB_OUTPUT"
+
       # No secrets required: Azure SQL uses Entra-only authentication.
       - name: Deploy Bicep to resource group (incremental)
         run: |
+          OVERRIDE=""
+          if [ -n "${{ steps.current-image.outputs.image }}" ]; then
+            OVERRIDE="backendImage=${{ steps.current-image.outputs.image }}"
+          fi
           az deployment group create \
             --name "petrovisor-$(date -u +%Y%m%d%H%M%S)" \
             --resource-group "${RESOURCE_GROUP}" \
             --mode Incremental \
             --template-file "${TEMPLATE_FILE}" \
-            --parameters "${PARAM_FILE}"
+            --parameters "${PARAM_FILE}" \
+            ${OVERRIDE:+--parameters "${OVERRIDE}"}
