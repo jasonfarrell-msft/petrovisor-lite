@@ -1,8 +1,19 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace PetroVisorLite.Web.Models;
 
 // These mirror the backend's PetroVisorLite.Application.Dtos / Analytics DTOs.
 // Kept as plain records in the frontend project since the frontend does not
 // reference the backend assemblies directly (separate deployable app).
+
+public enum QueryIntent
+{
+    Unsupported = 0,
+    TopWellsByDeclineRate = 1,
+    WellsByArtificialLiftStatus = 2,
+    FieldProductionTrendSummary = 3,
+}
 
 public record LoginRequest(string Email, string Password);
 
@@ -40,6 +51,31 @@ public record DashboardSummaryDto(
     IReadOnlyList<FieldDailyProductionDto> FieldDailyProduction,
     IReadOnlyList<ArtificialLiftBreakdownDto> ArtificialLiftBreakdown,
     IReadOnlyList<WellDeclineRankingDto> TopWellsByDecline);
+
+public record AssistantQueryRequest(string Question);
+
+public record AssistantQueryResponseDto
+{
+    public QueryIntent Intent { get; init; }
+    public bool IsSupported { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public JsonElement Data { get; init; }
+
+    [JsonConstructor]
+    public AssistantQueryResponseDto(QueryIntent intent, bool isSupported, string message, JsonElement data)
+    {
+        Intent = intent;
+        IsSupported = isSupported;
+        Message = message;
+        Data = data.Clone();
+    }
+}
+
+public record TopWellsByDeclineResponseDto(int RequestedLimit, IReadOnlyList<WellDeclineRankingDto> Wells);
+
+public record ArtificialLiftStatusBreakdownDto(string ArtificialLiftStatus, int WellCount);
+
+public record WellsByArtificialLiftStatusResponseDto(IReadOnlyList<ArtificialLiftStatusBreakdownDto> Breakdowns);
 
 public record CsvImportRowErrorDto(int RowNumber, string Reason);
 
