@@ -20,9 +20,10 @@ public static class AuthenticationExtensions
             .AddJwtBearer(options =>
             {
                 // Key may be empty at startup time before configuration is bound from
-                // User Secrets/Key Vault; a random fallback key means validation simply
-                // fails closed (no tokens will validate) rather than throwing at startup.
-                var keyBytes = Encoding.UTF8.GetBytes(string.IsNullOrEmpty(jwtOptions.Key) ? Guid.NewGuid().ToString() : jwtOptions.Key);
+                // User Secrets/Key Vault; use a stable in-process fallback so the app can
+                // issue and validate tokens in local/dev scenarios without crashing.
+                jwtOptions.Key = JwtOptions.ResolveKey(jwtOptions.Key);
+                var keyBytes = Encoding.UTF8.GetBytes(jwtOptions.Key);
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

@@ -36,7 +36,12 @@ public static class ServiceCollectionExtensions
             .AddEntityFrameworkStores<PetroVisorDbContext>()
             .AddDefaultTokenProviders();
 
-        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .PostConfigure(options =>
+            {
+                options.Key = JwtOptions.ResolveKey(options.Key);
+            });
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         services.AddScoped<IWellRepository, WellRepository>();

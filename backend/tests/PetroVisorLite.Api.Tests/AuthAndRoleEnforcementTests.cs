@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PetroVisorLite.Application.Dtos;
 using PetroVisorLite.Infrastructure;
+using PetroVisorLite.Infrastructure.Auth;
 using PetroVisorLite.Infrastructure.Identity;
 
 namespace PetroVisorLite.Api.Tests;
@@ -70,6 +71,16 @@ public class AuthAndRoleEnforcementTests : IClassFixture<WebApplicationFactory<P
         Assert.NotNull(body);
         Assert.False(string.IsNullOrEmpty(body!.Token));
         Assert.Contains(Roles.Engineer, body.Roles);
+    }
+
+    [Fact]
+    public void JwtOptions_ResolveKey_GeneratesStableFallbackWhenUnset()
+    {
+        var key1 = JwtOptions.ResolveKey(null);
+        var key2 = JwtOptions.ResolveKey(string.Empty);
+
+        Assert.False(string.IsNullOrWhiteSpace(key1));
+        Assert.Equal(key1, key2);
     }
 
     [Fact]
