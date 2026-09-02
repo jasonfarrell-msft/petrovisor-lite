@@ -75,11 +75,14 @@ else
         </div>
     </div>
 
-    <div class="ask-petrovisor-toggle-wrap">
-        <button class="btn btn-primary ask-petrovisor-toggle" type="button" aria-expanded="@_showChatPanel" @onclick="ToggleChatPanel">
-            @(_showChatPanel ? "Close" : "Ask PetroVisor")
-        </button>
-    </div>
+    @if (!_showChatPanel)
+    {
+        <div class="ask-petrovisor-toggle-wrap">
+            <button class="btn btn-primary ask-petrovisor-toggle" type="button" aria-expanded="false" @ref="_askToggle" @onclick="OpenChatPanel">
+                Ask PetroVisor
+            </button>
+        </div>
+    }
 
     @if (_showChatPanel)
     {
@@ -91,7 +94,7 @@ else
                     <div class="ask-petrovisor-badge">AI assistant</div>
                     <h2 class="h4 mb-0">Ask PetroVisor</h2>
                 </div>
-                <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="CloseChatPanel">Close</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" @ref="_drawerClose" @onclick="CloseChatPanel">Close</button>
             </div>
 
             <div class="ask-petrovisor-body">
@@ -208,6 +211,7 @@ else
                 <div class="input-group ask-petrovisor-input-group">
                     <input class="form-control"
                            type="text"
+                           @ref="_questionInput"
                            @bind="_question"
                            @bind:event="oninput"
                            disabled="@_isSubmitting"
@@ -232,12 +236,25 @@ else
     private string _question = string.Empty;
     private bool _isSubmitting;
     private bool _showChatPanel;
+    private bool _focusQuestionInput;
+    private bool _restoreToggleFocus;
+    private ElementReference _askToggle;
+    private ElementReference _drawerClose;
+    private ElementReference _questionInput;
     private readonly List<ChatMessage> _chatMessages = new();
     private readonly HashSet<string> _renderedChartCanvasIds = new();
 
-    private void ToggleChatPanel() => _showChatPanel = !_showChatPanel;
+    private void OpenChatPanel()
+    {
+        _showChatPanel = true;
+        _focusQuestionInput = true;
+    }
 
-    private void CloseChatPanel() => _showChatPanel = false;
+    private void CloseChatPanel()
+    {
+        _showChatPanel = false;
+        _restoreToggleFocus = true;
+    }
 
     private sealed class ChatMessage
     {
@@ -269,6 +286,17 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_focusQuestionInput)
+        {
+            _focusQuestionInput = false;
+            await (_isSubmitting ? _drawerClose : _questionInput).FocusAsync();
+        }
+        else if (_restoreToggleFocus)
+        {
+            _restoreToggleFocus = false;
+            await _askToggle.FocusAsync();
+        }
+
         if (_summary is not null && !_chartsRendered)
         {
             _chartsRendered = true;

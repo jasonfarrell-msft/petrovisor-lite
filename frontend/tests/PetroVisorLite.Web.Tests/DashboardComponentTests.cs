@@ -134,6 +134,12 @@ public class DashboardComponentTests : TestContext
         Assert.Contains("AI assistant", cut.Markup);
         Assert.Contains("Ask about decline, lift status, or production trends", cut.Markup);
         Assert.Contains("ask-petrovisor-drawer", cut.Markup);
+        Assert.Empty(cut.FindAll("button.ask-petrovisor-toggle"));
+
+        cut.FindAll("button").Single(button => button.TextContent.Trim() == "Close").Click();
+
+        Assert.Empty(cut.FindAll("aside.ask-petrovisor-drawer"));
+        Assert.Single(cut.FindAll("button.ask-petrovisor-toggle"));
     }
 
     private static PetroVisorApiClient CreateApiClient(HttpResponseMessage dashboardResponse, HttpResponseMessage assistantResponse)
