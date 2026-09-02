@@ -9,10 +9,23 @@ namespace PetroVisorLite.Infrastructure.Auth;
 /// </summary>
 public class JwtOptions
 {
+    private static string? _generatedKey;
+
     public const string SectionName = "Jwt";
 
     public string Key { get; set; } = string.Empty;
     public string Issuer { get; set; } = "PetroVisorLite";
     public string Audience { get; set; } = "PetroVisorLiteClients";
     public int ExpiryMinutes { get; set; } = 60;
+
+    public static string ResolveKey(string? configuredKey)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredKey))
+        {
+            return configuredKey;
+        }
+
+        _generatedKey ??= Guid.NewGuid().ToString("N");
+        return _generatedKey;
+    }
 }
