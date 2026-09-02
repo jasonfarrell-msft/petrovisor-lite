@@ -19,6 +19,7 @@ param corsAllowedOrigins string = ''
 param seedDemoData bool = false
 
 param userAssignedIdentityId string
+param userAssignedIdentityClientId string
 param keyVaultUri string
 param sqlServerFqdn string
 param sqlDatabaseName string
@@ -85,15 +86,15 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
             memory: '1Gi'
           }
           env: [
-            // Intentionally no AZURE_CLIENT_ID here: DefaultAzureCredential falls
-            // back to the system-assigned identity when a client ID isn't
-            // specified, so app-level SQL/Key Vault auth uses SystemAssigned,
-            // not the UserAssigned identity reserved for ACR pull.
+            // SQL access is granted to the user-assigned identity. Foundry uses
+            // the system-assigned identity explicitly in application code.
+            { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
             { name: 'KEYVAULT_URI', value: keyVaultUri }
             { name: 'SQL_SERVER_FQDN', value: sqlServerFqdn }
             { name: 'SQL_DATABASE_NAME', value: sqlDatabaseName }
-            { name: 'AI_FOUNDRY_ENDPOINT', value: aiFoundryEndpoint }
-            { name: 'AI_FOUNDRY_DEPLOYMENT', value: aiFoundryDeploymentName }
+            { name: 'AzureAiFoundry__Endpoint', value: aiFoundryEndpoint }
+            { name: 'AzureAiFoundry__ModelName', value: aiFoundryDeploymentName }
+            { name: 'AzureAiFoundry__DeploymentName', value: aiFoundryDeploymentName }
             { name: 'CORS_ALLOWED_ORIGINS', value: corsAllowedOrigins }
             { name: 'SEED_DEMO_DATA', value: seedDemoData ? 'true' : 'false' }
             { name: 'IMAGE_NAME', value: backendImage }

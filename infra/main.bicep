@@ -156,6 +156,7 @@ module containerApps 'modules/containerapps.bicep' = {
     corsAllowedOrigins: corsAllowedOrigins
     seedDemoData: seedDemoData
     userAssignedIdentityId: identity.outputs.id
+    userAssignedIdentityClientId: identity.outputs.clientId
     keyVaultUri: keyVault.outputs.uri
     sqlServerFqdn: sql.outputs.sqlServerFqdn
     sqlDatabaseName: sql.outputs.sqlDatabaseName

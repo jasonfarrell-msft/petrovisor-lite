@@ -35,7 +35,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-infra-${{ github.ref }}
+  # Infra and API deployments both update the Container App. Serialize them so
+  # an infra run cannot restore an image captured while an API deploy is active.
+  group: petrovisor-azure-prod
   cancel-in-progress: false
 
 env:

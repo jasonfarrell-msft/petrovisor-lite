@@ -1,3 +1,5 @@
+using Azure.Core;
+using Azure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -44,6 +46,8 @@ public static class ServiceCollectionExtensions
             });
         services.AddOptions<AzureAiFoundryOptions>()
             .Bind(configuration.GetSection(AzureAiFoundryOptions.SectionName));
+        services.AddSingleton<TokenCredential>(
+            _ => new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned));
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddHttpClient<IQueryIntentClassifier, AzureAiFoundryQueryIntentClassifier>();
 

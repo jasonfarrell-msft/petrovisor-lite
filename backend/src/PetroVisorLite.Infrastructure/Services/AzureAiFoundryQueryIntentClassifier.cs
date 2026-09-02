@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Azure.Core;
+using Azure.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PetroVisorLite.Application.Dtos;
 using PetroVisorLite.Application.Interfaces;
@@ -12,7 +15,6 @@ public sealed class AzureAiFoundryOptions
     public const string SectionName = "AzureAiFoundry";
 
     public string Endpoint { get; set; } = string.Empty;
-    public string? ApiKey { get; set; }
     public string? DeploymentName { get; set; }
     public string? ModelName { get; set; }
 }
@@ -26,11 +28,19 @@ public class AzureAiFoundryQueryIntentClassifier : IQueryIntentClassifier
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<AzureAiFoundryOptions> _options;
+    private readonly TokenCredential _credential;
+    private readonly ILogger<AzureAiFoundryQueryIntentClassifier> _logger;
 
-    public AzureAiFoundryQueryIntentClassifier(HttpClient httpClient, IOptions<AzureAiFoundryOptions> options)
+    public AzureAiFoundryQueryIntentClassifier(
+        HttpClient httpClient,
+        IOptions<AzureAiFoundryOptions> options,
+        TokenCredential credential,
+        ILogger<AzureAiFoundryQueryIntentClassifier> logger)
     {
         _httpClient = httpClient;
         _options = options;
+        _credential = credential;
+        _logger = logger;
     }
 
     public async Task<QueryIntentClassification> ClassifyAsync(string userQuestion, CancellationToken cancellationToken = default)
@@ -41,19 +51,35 @@ public class AzureAiFoundryQueryIntentClassifier : IQueryIntentClassifier
         }
 
         var config = _options.Value;
-        if (!string.IsNullOrWhiteSpace(config.Endpoint) && !string.IsNullOrWhiteSpace(config.ModelName))
+        if (!string.IsNullOrWhiteSpace(config.Endpoint) &&
+            (!string.IsNullOrWhiteSpace(config.DeploymentName) || !string.IsNullOrWhiteSpace(config.ModelName)))
         {
             try
             {
                 var foundryResult = await TryClassifyWithFoundryAsync(userQuestion, config, cancellationToken);
                 if (foundryResult is not null)
                 {
+                    _logger.LogInformation(
+                        "Microsoft Foundry selected intent {Intent}.",
+                        foundryResult.Intent);
                     return foundryResult;
                 }
             }
-            catch
+            catch (AuthenticationFailedException exception)
             {
-                // Fall back to deterministic matching when the service is unavailable or rejects the prompt.
+                _logger.LogWarning(exception, "Managed identity authentication to Microsoft Foundry failed; using local intent classification.");
+            }
+            catch (HttpRequestException exception)
+            {
+                _logger.LogWarning(exception, "Microsoft Foundry request failed; using local intent classification.");
+            }
+            catch (JsonException exception)
+            {
+                _logger.LogWarning(exception, "Microsoft Foundry returned an invalid intent response; using local intent classification.");
+            }
+            catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogWarning(exception, "Microsoft Foundry request timed out; using local intent classification.");
             }
         }
 
@@ -71,7 +97,7 @@ public class AzureAiFoundryQueryIntentClassifier : IQueryIntentClassifier
             return null;
         }
 
-        var requestUri = new Uri($"{config.Endpoint.TrimEnd('/')}/models/chat/completions?api-version=2024-05-01-preview");
+        var requestUri = new Uri($"{config.Endpoint.TrimEnd('/')}/openai/v1/chat/completions");
         var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
         {
             Content = JsonContent.Create(new
@@ -90,21 +116,22 @@ public class AzureAiFoundryQueryIntentClassifier : IQueryIntentClassifier
                         content = userQuestion
                     }
                 },
-                temperature = 0,
                 response_format = new { type = "json_object" }
             })
         };
 
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        if (!string.IsNullOrWhiteSpace(config.ApiKey))
-        {
-            request.Headers.Add("api-key", config.ApiKey);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
-        }
+        var accessToken = await _credential.GetTokenAsync(
+            new TokenRequestContext(["https://ai.azure.com/.default"]),
+            cancellationToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Token);
 
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            _logger.LogWarning(
+                "Microsoft Foundry intent classification returned HTTP {StatusCode}; using local intent classification.",
+                (int)response.StatusCode);
             return null;
         }
 
@@ -112,36 +139,29 @@ public class AzureAiFoundryQueryIntentClassifier : IQueryIntentClassifier
         using var document = JsonDocument.Parse(payload);
         var root = document.RootElement;
 
-        var intentValue = GetString(root, "intent") ?? GetString(root, "queryIntent") ?? GetString(root, "classification");
-        if (string.IsNullOrWhiteSpace(intentValue))
+        var intentValue = GetIntent(root);
+        if (!string.IsNullOrWhiteSpace(intentValue))
         {
-            if (root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array)
+            return MapIntent(intentValue, root);
+        }
+
+        if (root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var choice in choices.EnumerateArray())
             {
-                foreach (var choice in choices.EnumerateArray())
+                if (choice.TryGetProperty("message", out var messageElement) &&
+                    messageElement.TryGetProperty("content", out var contentElement))
                 {
-                    if (choice.TryGetProperty("message", out var messageElement) &&
-                        messageElement.TryGetProperty("content", out var contentElement))
+                    var content = contentElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(content))
                     {
-                        var content = contentElement.GetString();
-                        if (!string.IsNullOrWhiteSpace(content))
-                        {
-                            intentValue = ExtractIntentFromContent(content);
-                            if (!string.IsNullOrWhiteSpace(intentValue))
-                            {
-                                break;
-                            }
-                        }
+                        return MapIntentFromContent(content);
                     }
                 }
             }
         }
 
-        if (string.IsNullOrWhiteSpace(intentValue))
-        {
-            return QueryIntentClassification.Unsupported("I can't answer that yet.");
-        }
-
-        return MapIntent(intentValue, root);
+        return QueryIntentClassification.Unsupported("I can't answer that yet.");
     }
 
     private static QueryIntentClassification ClassifyLocally(string userQuestion)
@@ -206,34 +226,20 @@ public class AzureAiFoundryQueryIntentClassifier : IQueryIntentClassifier
         };
     }
 
-    private static string? ExtractIntentFromContent(string content)
+    private static QueryIntentClassification MapIntentFromContent(string content)
     {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return null;
-        }
-
-        var trimmed = content.Trim();
-        if (trimmed.StartsWith("{", StringComparison.Ordinal) && trimmed.EndsWith("}", StringComparison.Ordinal))
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(trimmed);
-                var root = doc.RootElement;
-                return GetString(root, "intent") ?? GetString(root, "queryIntent") ?? GetString(root, "classification");
-            }
-            catch
-            {
-                // Fall through to best-effort parse below.
-            }
-        }
-
-        var match = System.Text.RegularExpressions.Regex.Match(
-            trimmed,
-            "\"intent\"\\s*:\\s*\"([^\"]+)\"",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        return match.Success ? match.Groups[1].Value : null;
+        using var document = JsonDocument.Parse(content);
+        var root = document.RootElement;
+        var intentValue = GetIntent(root);
+        return string.IsNullOrWhiteSpace(intentValue)
+            ? QueryIntentClassification.Unsupported("I can't answer that yet.")
+            : MapIntent(intentValue, root);
     }
+
+    private static string? GetIntent(JsonElement root) =>
+        GetString(root, "intent") ??
+        GetString(root, "queryIntent") ??
+        GetString(root, "classification");
 
     private static string? GetString(JsonElement root, string propertyName)
     {
