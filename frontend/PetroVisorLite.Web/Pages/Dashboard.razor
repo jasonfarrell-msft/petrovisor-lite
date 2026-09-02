@@ -5,6 +5,9 @@
 @inject PetroVisorLite.Web.Services.ChartInteropService ChartInterop
 @using PetroVisorLite.Web.Models
 
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Web
+
 <PageTitle>Dashboard</PageTitle>
 
 <h1>Dashboard</h1>
@@ -71,13 +74,160 @@ else
             <canvas id="declineRankingChart" height="140"></canvas>
         </div>
     </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="h4">Ask PetroVisor</h2>
+
+                    <div class="chat-panel mb-3">
+                        @foreach (var message in _chatMessages)
+                        {
+                            <div class="mb-3 @(message.IsUser ? "text-end" : "text-start")">
+                                <div class="d-inline-block rounded-3 px-3 py-2 @(message.IsUser ? "bg-primary text-white" : "bg-light border")">
+                                    <small class="fw-semibold d-block">@(message.IsUser ? "You" : "PetroVisor")</small>
+                                    <span>@message.Text</span>
+                                </div>
+
+                                @if (!message.IsUser && message.AssistantResponse is not null)
+                                {
+                                    @if (!message.AssistantResponse.IsSupported || message.AssistantResponse.Intent == QueryIntent.Unsupported)
+                                    {
+                                        <div class="alert alert-info mt-2 mb-0">
+                                            @(message.IsServiceError
+                                                ? message.AssistantResponse.Message
+                                                : "I can't answer that yet. Try asking about top wells by decline rate, artificial lift status, or field production trends.")
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="mt-2">
+                                            @switch (message.AssistantResponse.Intent)
+                                            {
+                                                case QueryIntent.TopWellsByDeclineRate:
+                                                    var wells = GetTopWells(message.AssistantResponse);
+                                                    if (wells.Count > 0)
+                                                    {
+                                                        <div class="card card-body bg-light border">
+                                                            <h6 class="mb-2">Top wells by decline rate</h6>
+                                                            <canvas id="@message.ChartCanvasId" height="120"></canvas>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="alert alert-light border mb-0">No decline rankings were returned for that query.</div>
+                                                    }
+                                                    break;
+
+                                                case QueryIntent.WellsByArtificialLiftStatus:
+                                                    var liftBreakdowns = GetLiftBreakdowns(message.AssistantResponse);
+                                                    if (liftBreakdowns.Count > 0)
+                                                    {
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-striped mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Artificial lift status</th>
+                                                                        <th>Well count</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @foreach (var breakdown in liftBreakdowns)
+                                                                    {
+                                                                        <tr>
+                                                                            <td>@breakdown.ArtificialLiftStatus</td>
+                                                                            <td>@breakdown.WellCount</td>
+                                                                        </tr>
+                                                                    }
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="alert alert-light border mb-0">No lift status breakdown was returned.</div>
+                                                    }
+                                                    break;
+
+                                                case QueryIntent.FieldProductionTrendSummary:
+                                                    var fieldSummary = GetFieldProductionSummary(message.AssistantResponse);
+                                                    if (fieldSummary.Count > 0)
+                                                    {
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-striped mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Date</th>
+                                                                        <th>Oil (bbl)</th>
+                                                                        <th>Gas (mcf)</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @foreach (var point in fieldSummary)
+                                                                    {
+                                                                        <tr>
+                                                                            <td>@point.Date.ToString("yyyy-MM-dd")</td>
+                                                                            <td>@point.OilVolumeBbl.ToString("N0")</td>
+                                                                            <td>@point.GasVolumeMcf.ToString("N0")</td>
+                                                                        </tr>
+                                                                    }
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="alert alert-light border mb-0">No field production trend summary was returned.</div>
+                                                    }
+                                                    break;
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="input-group">
+                        <input class="form-control"
+                               type="text"
+                               @bind="_question"
+                               @bind:event="oninput"
+                               disabled="@_isSubmitting"
+                               placeholder="Ask about decline, lift status, or production trends"
+                               @onkeydown="HandleQuestionKeyDown" />
+                        <button class="btn btn-primary" type="button" @onclick="SubmitQuestionAsync" disabled="@_isSubmitting">
+                            @( _isSubmitting ? "Asking..." : "Ask" )
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
+    private const int MaxFieldProductionRows = 5;
+
     private bool _loaded;
     private string? _loadError;
     private DashboardSummaryDto? _summary;
     private bool _chartsRendered;
+    private string _question = string.Empty;
+    private bool _isSubmitting;
+    private readonly List<ChatMessage> _chatMessages = new();
+    private readonly HashSet<string> _renderedChartCanvasIds = new();
+
+    private sealed class ChatMessage
+    {
+        public bool IsUser { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public AssistantQueryResponseDto? AssistantResponse { get; set; }
+        public bool IsServiceError { get; set; }
+        public bool ChartRendered { get; set; }
+        public string ChartCanvasId { get; set; } = $"chat-chart-{Guid.NewGuid():N}";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,7 +273,187 @@ else
                 decline.Select(w => w.WellName).ToList(),
                 decline.Select(w => (w.DailyDeclinePercent ?? 0) * 100).ToList());
         }
+
+        foreach (var message in _chatMessages.Where(m => !m.IsUser && m.AssistantResponse is not null && m.AssistantResponse.Intent == QueryIntent.TopWellsByDeclineRate && !m.ChartRendered))
+        {
+            var wells = GetTopWells(message.AssistantResponse);
+            if (wells.Count == 0)
+            {
+                message.ChartRendered = true;
+                continue;
+            }
+
+            if (!_renderedChartCanvasIds.Add(message.ChartCanvasId))
+            {
+                message.ChartRendered = true;
+                continue;
+            }
+
+            message.ChartRendered = true;
+            await ChartInterop.RenderDeclineRankingChartAsync(
+                message.ChartCanvasId,
+                wells.Select(w => w.WellName).ToList(),
+                wells.Select(w => (w.DailyDeclinePercent ?? 0) * 100).ToList());
+        }
     }
+
+    private async Task SubmitQuestionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_question) || _isSubmitting)
+        {
+            return;
+        }
+
+        var question = _question.Trim();
+        _question = string.Empty;
+        _chatMessages.Add(new ChatMessage { IsUser = true, Text = question });
+        _isSubmitting = true;
+
+        try
+        {
+            var response = await ApiClient.QueryAssistantAsync(question);
+            var assistantReply = response ?? new AssistantQueryResponseDto(
+                QueryIntent.Unsupported,
+                false,
+                "I can't answer that yet.",
+                default);
+
+            _chatMessages.Add(new ChatMessage
+            {
+                IsUser = false,
+                Text = assistantReply.Message,
+                AssistantResponse = assistantReply,
+            });
+        }
+        catch (HttpRequestException)
+        {
+            _chatMessages.Add(new ChatMessage
+            {
+                IsUser = false,
+                Text = "I can't reach the assistant service right now.",
+                IsServiceError = true,
+                AssistantResponse = new AssistantQueryResponseDto(QueryIntent.Unsupported, false, "I can't reach the assistant service right now.", default)
+            });
+        }
+        catch (JsonException)
+        {
+            _chatMessages.Add(new ChatMessage
+            {
+                IsUser = false,
+                Text = "The assistant returned an unexpected response.",
+                IsServiceError = true,
+                AssistantResponse = new AssistantQueryResponseDto(QueryIntent.Unsupported, false, "The assistant returned an unexpected response.", default)
+            });
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task HandleQuestionKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SubmitQuestionAsync();
+        }
+    }
+
+    private static List<WellDeclineRankingDto> GetTopWells(AssistantQueryResponseDto? response)
+    {
+        if (response is null || response.Data.ValueKind != JsonValueKind.Object)
+        {
+            return new List<WellDeclineRankingDto>();
+        }
+
+        if (!response.Data.TryGetProperty("Wells", out var wellsElement) || wellsElement.ValueKind != JsonValueKind.Array)
+        {
+            return new List<WellDeclineRankingDto>();
+        }
+
+        var chartRows = new List<WellDeclineRankingDto>();
+        foreach (var well in wellsElement.EnumerateArray())
+        {
+            if (well.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var name = well.TryGetProperty("WellName", out var nameValue) ? nameValue.GetString() : "Unknown";
+            var apiNumber = well.TryGetProperty("ApiNumber", out var apiValue) ? apiValue.GetString() : string.Empty;
+            double? dailyDecline = well.TryGetProperty("DailyDeclinePercent", out var declineValue) && declineValue.ValueKind != JsonValueKind.Null
+                ? declineValue.GetDouble()
+                : null;
+
+            chartRows.Add(new WellDeclineRankingDto(Guid.Empty, name ?? "Unknown", apiNumber ?? string.Empty, dailyDecline, null));
+        }
+
+        return chartRows;
+    }
+
+    private static List<FieldDailyProductionDto> GetFieldProductionSummary(AssistantQueryResponseDto? response)
+    {
+        if (response is null || response.Data.ValueKind != JsonValueKind.Object)
+        {
+            return new List<FieldDailyProductionDto>();
+        }
+
+        if (!response.Data.TryGetProperty("FieldDailyProduction", out var fieldSummaryElement) || fieldSummaryElement.ValueKind != JsonValueKind.Array)
+        {
+            return new List<FieldDailyProductionDto>();
+        }
+
+        var summary = new List<FieldDailyProductionDto>();
+        foreach (var item in fieldSummaryElement.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var dateText = item.TryGetProperty("Date", out var dateValue) ? dateValue.GetString() : null;
+            if (!DateOnly.TryParse(dateText, out var date))
+            {
+                continue;
+            }
+
+            var oilVolume = item.TryGetProperty("OilVolumeBbl", out var oilValue) ? oilValue.GetDouble() : 0d;
+            var gasVolume = item.TryGetProperty("GasVolumeMcf", out var gasValue) ? gasValue.GetDouble() : 0d;
+            var waterVolume = item.TryGetProperty("WaterVolumeBbl", out var waterValue) ? waterValue.GetDouble() : 0d;
+            summary.Add(new FieldDailyProductionDto(date, oilVolume, gasVolume, waterVolume));
+        }
+
+        return summary.Take(MaxFieldProductionRows).ToList();
+    }
+
+    private static List<ArtificialLiftStatusBreakdownDto> GetLiftBreakdowns(AssistantQueryResponseDto? response)
+    {
+        if (response is null || response.Data.ValueKind != JsonValueKind.Object)
+        {
+            return new List<ArtificialLiftStatusBreakdownDto>();
+        }
+
+        if (!response.Data.TryGetProperty("Breakdowns", out var breakdownsElement) || breakdownsElement.ValueKind != JsonValueKind.Array)
+        {
+            return new List<ArtificialLiftStatusBreakdownDto>();
+        }
+
+        var breakdowns = new List<ArtificialLiftStatusBreakdownDto>();
+        foreach (var item in breakdownsElement.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var status = item.TryGetProperty("ArtificialLiftStatus", out var statusValue) ? statusValue.GetString() : "Unknown";
+            var count = item.TryGetProperty("WellCount", out var countValue) ? countValue.GetInt32() : 0;
+            breakdowns.Add(new ArtificialLiftStatusBreakdownDto(status ?? "Unknown", count));
+        }
+
+        return breakdowns;
+    }
+
 
     public async ValueTask DisposeAsync()
     {

@@ -61,6 +61,19 @@ public class PetroVisorApiClient
         await _httpClient.GetFromJsonAsync<DashboardSummaryDto>(
             $"api/kpi/dashboard?periodStart={periodStart:yyyy-MM-dd}&periodEnd={periodEnd:yyyy-MM-dd}", cancellationToken);
 
+    public async Task<AssistantQueryResponseDto?> QueryAssistantAsync(string question, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(question))
+        {
+            return null;
+        }
+
+        var response = await _httpClient.PostAsJsonAsync("api/assistant/query", new AssistantQueryRequest(question), cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<AssistantQueryResponseDto>(cancellationToken: cancellationToken);
+    }
+
     public async Task<CsvImportResultDto?> ImportProductionCsvAsync(Stream fileStream, string fileName, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
