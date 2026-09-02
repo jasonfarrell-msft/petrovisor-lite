@@ -1,0 +1,115 @@
+name: Deploy Backend API (Azure Container Apps)
+
+# Authentication is OIDC / workload identity federation ONLY.
+# No client secrets or passwords are used. See infra/README.md.
+#
+# TRIGGER MODEL:
+#   push to main (backend/** changes) -> build + deploy (continuous delivery)
+#   pull_request                       -> build only. NEVER deploys.
+#   workflow_dispatch                  -> manual escape hatch; runs full deploy.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RESOURCE_GROUP: rg-petrovisor-cus01
+  CONTAINER_APP_NAME: ca-petrovisor-api-cus01
+  REGISTRY: acrpetrovisor.azurecr.io
+  IMAGE_NAME: petrovisor-api
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Build the Docker image.
+  #    Runs on every trigger to validate the build before any deployment.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for OIDC federated login to push to ACR
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Generate image tag
+        id: meta
+        run: |
+          SHORT_SHA="${GITHUB_SHA::8}"
+          DATE="$(date -u +%Y%m%d)"
+          TAG="${DATE}-${SHORT_SHA}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: ${TAG}"
+
+      - name: Azure login (OIDC)
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to Azure Container Registry
+        run: az acr login --name acrpetrovisor
+
+      - name: Build and push Docker image
+        working-directory: backend
+        run: |
+          IMAGE_REF="${REGISTRY}/${IMAGE_NAME}:${{ steps.meta.outputs.tag }}"
+          docker build -t "${IMAGE_REF}" .
+          docker push "${IMAGE_REF}"
+          echo "Pushed: ${IMAGE_REF}"
+
+  # ---------------------------------------------------------------------------
+  # 2. Deploy to Azure Container Apps.
+  #    Only runs on push to main or manual workflow_dispatch.
+  #    Sets minimum replicas to 1 to ensure at least one instance is always running.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy to ca-petrovisor-api-cus01
+    needs: build
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: azure-prod
+    permissions:
+      contents: read
+      id-token: write # required for OIDC federated login
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update container app image and enforce minimum replicas
+        run: |
+          IMAGE_REF="${REGISTRY}/${IMAGE_NAME}:${{ needs.build.outputs.image-tag }}"
+          az containerapp update \
+            --name "${CONTAINER_APP_NAME}" \
+            --resource-group "${RESOURCE_GROUP}" \
+            --image "${IMAGE_REF}" \
+            --min-replicas 1
+          echo "Deployed ${IMAGE_REF} to ${CONTAINER_APP_NAME}"
