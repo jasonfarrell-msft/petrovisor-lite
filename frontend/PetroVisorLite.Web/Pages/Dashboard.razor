@@ -75,136 +75,151 @@ else
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="h4">Ask PetroVisor</h2>
+    <div class="ask-petrovisor-toggle-wrap">
+        <button class="btn btn-primary ask-petrovisor-toggle" type="button" aria-expanded="@_showChatPanel" @onclick="ToggleChatPanel">
+            @(_showChatPanel ? "Close" : "Ask PetroVisor")
+        </button>
+    </div>
 
-                    <div class="chat-panel mb-3">
-                        @foreach (var message in _chatMessages)
-                        {
-                            <div class="mb-3 @(message.IsUser ? "text-end" : "text-start")">
-                                <div class="d-inline-block rounded-3 px-3 py-2 @(message.IsUser ? "bg-primary text-white" : "bg-light border")">
-                                    <small class="fw-semibold d-block">@(message.IsUser ? "You" : "PetroVisor")</small>
-                                    <span>@message.Text</span>
-                                </div>
+    @if (_showChatPanel)
+    {
+        <div class="ask-petrovisor-backdrop" @onclick="CloseChatPanel"></div>
 
-                                @if (!message.IsUser && message.AssistantResponse is not null)
-                                {
-                                    @if (!message.AssistantResponse.IsSupported || message.AssistantResponse.Intent == QueryIntent.Unsupported)
-                                    {
-                                        <div class="alert alert-info mt-2 mb-0">
-                                            @(message.IsServiceError
-                                                ? message.AssistantResponse.Message
-                                                : "I can't answer that yet. Try asking about top wells by decline rate, artificial lift status, or field production trends.")
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="mt-2">
-                                            @switch (message.AssistantResponse.Intent)
-                                            {
-                                                case QueryIntent.TopWellsByDeclineRate:
-                                                    var wells = GetTopWells(message.AssistantResponse);
-                                                    if (wells.Count > 0)
-                                                    {
-                                                        <div class="card card-body bg-light border">
-                                                            <h6 class="mb-2">Top wells by decline rate</h6>
-                                                            <canvas id="@message.ChartCanvasId" height="120"></canvas>
-                                                        </div>
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="alert alert-light border mb-0">No decline rankings were returned for that query.</div>
-                                                    }
-                                                    break;
+        <aside class="ask-petrovisor-drawer" aria-label="Ask PetroVisor">
+            <div class="ask-petrovisor-header">
+                <div>
+                    <div class="ask-petrovisor-badge">AI assistant</div>
+                    <h2 class="h4 mb-0">Ask PetroVisor</h2>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="CloseChatPanel">Close</button>
+            </div>
 
-                                                case QueryIntent.WellsByArtificialLiftStatus:
-                                                    var liftBreakdowns = GetLiftBreakdowns(message.AssistantResponse);
-                                                    if (liftBreakdowns.Count > 0)
-                                                    {
-                                                        <div class="table-responsive">
-                                                            <table class="table table-sm table-striped mb-0">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>Artificial lift status</th>
-                                                                        <th>Well count</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    @foreach (var breakdown in liftBreakdowns)
-                                                                    {
-                                                                        <tr>
-                                                                            <td>@breakdown.ArtificialLiftStatus</td>
-                                                                            <td>@breakdown.WellCount</td>
-                                                                        </tr>
-                                                                    }
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="alert alert-light border mb-0">No lift status breakdown was returned.</div>
-                                                    }
-                                                    break;
-
-                                                case QueryIntent.FieldProductionTrendSummary:
-                                                    var fieldSummary = GetFieldProductionSummary(message.AssistantResponse);
-                                                    if (fieldSummary.Count > 0)
-                                                    {
-                                                        <div class="table-responsive">
-                                                            <table class="table table-sm table-striped mb-0">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>Date</th>
-                                                                        <th>Oil (bbl)</th>
-                                                                        <th>Gas (mcf)</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    @foreach (var point in fieldSummary)
-                                                                    {
-                                                                        <tr>
-                                                                            <td>@point.Date.ToString("yyyy-MM-dd")</td>
-                                                                            <td>@point.OilVolumeBbl.ToString("N0")</td>
-                                                                            <td>@point.GasVolumeMcf.ToString("N0")</td>
-                                                                        </tr>
-                                                                    }
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="alert alert-light border mb-0">No field production trend summary was returned.</div>
-                                                    }
-                                                    break;
-                                            }
-                                        </div>
-                                    }
-                                }
+            <div class="ask-petrovisor-body">
+                <div class="chat-panel mb-3">
+                    @foreach (var message in _chatMessages)
+                    {
+                        <div class="mb-3 @(message.IsUser ? "text-end" : "text-start")">
+                            <div class="d-inline-block rounded-3 px-3 py-2 @(message.IsUser ? "bg-primary text-white" : "bg-light border")">
+                                <small class="fw-semibold d-block">@(message.IsUser ? "You" : "PetroVisor")</small>
+                                <span>@message.Text</span>
                             </div>
-                        }
-                    </div>
 
-                    <div class="input-group">
-                        <input class="form-control"
-                               type="text"
-                               @bind="_question"
-                               @bind:event="oninput"
-                               disabled="@_isSubmitting"
-                               placeholder="Ask about decline, lift status, or production trends"
-                               @onkeydown="HandleQuestionKeyDown" />
-                        <button class="btn btn-primary" type="button" @onclick="SubmitQuestionAsync" disabled="@_isSubmitting">
-                            @( _isSubmitting ? "Asking..." : "Ask" )
-                        </button>
-                    </div>
+                            @if (!message.IsUser && message.AssistantResponse is not null)
+                            {
+                                @if (!message.AssistantResponse.IsSupported || message.AssistantResponse.Intent == QueryIntent.Unsupported)
+                                {
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        @(message.IsServiceError
+                                            ? message.AssistantResponse.Message
+                                            : "I can't answer that yet. Try asking about top wells by decline rate, artificial lift status, or field production trends.")
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="mt-2">
+                                        @switch (message.AssistantResponse.Intent)
+                                        {
+                                            case QueryIntent.TopWellsByDeclineRate:
+                                                var wells = GetTopWells(message.AssistantResponse);
+                                                if (wells.Count > 0)
+                                                {
+                                                    <div class="card card-body bg-light border">
+                                                        <h6 class="mb-2">Top wells by decline rate</h6>
+                                                        <canvas id="@message.ChartCanvasId" height="120"></canvas>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="alert alert-light border mb-0">No decline rankings were returned for that query.</div>
+                                                }
+                                                break;
+
+                                            case QueryIntent.WellsByArtificialLiftStatus:
+                                                var liftBreakdowns = GetLiftBreakdowns(message.AssistantResponse);
+                                                if (liftBreakdowns.Count > 0)
+                                                {
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-striped mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Artificial lift status</th>
+                                                                    <th>Well count</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var breakdown in liftBreakdowns)
+                                                                {
+                                                                    <tr>
+                                                                        <td>@breakdown.ArtificialLiftStatus</td>
+                                                                        <td>@breakdown.WellCount</td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="alert alert-light border mb-0">No lift status breakdown was returned.</div>
+                                                }
+                                                break;
+
+                                            case QueryIntent.FieldProductionTrendSummary:
+                                                var fieldSummary = GetFieldProductionSummary(message.AssistantResponse);
+                                                if (fieldSummary.Count > 0)
+                                                {
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-striped mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Date</th>
+                                                                    <th>Oil (bbl)</th>
+                                                                    <th>Gas (mcf)</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var point in fieldSummary)
+                                                                {
+                                                                    <tr>
+                                                                        <td>@point.Date.ToString("yyyy-MM-dd")</td>
+                                                                        <td>@point.OilVolumeBbl.ToString("N0")</td>
+                                                                        <td>@point.GasVolumeMcf.ToString("N0")</td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="alert alert-light border mb-0">No field production trend summary was returned.</div>
+                                                }
+                                                break;
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
             </div>
-        </div>
-    </div>
+
+            <div class="ask-petrovisor-input-row">
+                <div class="input-group ask-petrovisor-input-group">
+                    <input class="form-control"
+                           type="text"
+                           @bind="_question"
+                           @bind:event="oninput"
+                           disabled="@_isSubmitting"
+                           placeholder="Ask about decline, lift status, or production trends"
+                           @onkeydown="HandleQuestionKeyDown" />
+                    <button class="btn btn-primary" type="button" @onclick="SubmitQuestionAsync" disabled="@_isSubmitting">
+                        @( _isSubmitting ? "Asking..." : "Ask" )
+                    </button>
+                </div>
+            </div>
+        </aside>
+    }
 }
 
 @code {
@@ -216,8 +231,13 @@ else
     private bool _chartsRendered;
     private string _question = string.Empty;
     private bool _isSubmitting;
+    private bool _showChatPanel;
     private readonly List<ChatMessage> _chatMessages = new();
     private readonly HashSet<string> _renderedChartCanvasIds = new();
+
+    private void ToggleChatPanel() => _showChatPanel = !_showChatPanel;
+
+    private void CloseChatPanel() => _showChatPanel = false;
 
     private sealed class ChatMessage
     {
