@@ -52,6 +52,21 @@ public record DashboardSummaryDto(
     IReadOnlyList<ArtificialLiftBreakdownDto> ArtificialLiftBreakdown,
     IReadOnlyList<WellDeclineRankingDto> TopWellsByDecline);
 
+public record FacilityComparisonRowDto(
+    Guid FacilityId,
+    string FacilityName,
+    string FacilityType,
+    int TiedInWellCount,
+    double TotalOilBbl,
+    double TotalGasMcf,
+    double TotalWaterBbl,
+    bool HasNoReportedProduction);
+
+public record FacilityComparisonDto(
+    DateOnly RangeStart,
+    DateOnly RangeEnd,
+    IReadOnlyList<FacilityComparisonRowDto> Facilities);
+
 public record AssistantQueryRequest(string Question);
 
 public record AssistantQueryResponseDto
