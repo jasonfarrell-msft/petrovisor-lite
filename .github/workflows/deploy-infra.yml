@@ -5,7 +5,7 @@ name: Deploy Infra (Azure)
 # anywhere in this repo or in GitHub secrets. See infra/README.md.
 #
 # TRIGGER MODEL:
-#   push to main    -> validate + deploy (continuous delivery)
+#   push to main    -> validate + what-if only
 #   pull_request    -> validate + what-if only. NEVER deploys.
 #   workflow_dispatch -> manual escape hatch; choose what-if or deploy.
 
@@ -80,6 +80,7 @@ jobs:
     name: What-if (read-only validation)
     needs: validate
     if: >-
+      github.event_name == 'push' ||
       github.event_name == 'pull_request' ||
       (github.event_name == 'workflow_dispatch' && inputs.action == 'what-if')
     runs-on: ubuntu-latest
@@ -109,8 +110,8 @@ jobs:
             --parameters "${PARAM_FILE}"
 
   # ---------------------------------------------------------------------------
-  # 3. Deploy. Runs automatically on every push to main that touches infra,
-  #    and on a manual workflow_dispatch with action=deploy.
+  # 3. Deploy. Runs only on a manual workflow_dispatch with action=deploy
+  #    after the human cost-approval gate has been satisfied.
   #
   #    `environment: azure-prod` is LOAD-BEARING: it changes the OIDC token
   #    subject to repo:<owner>/<repo>:environment:azure-prod, which is the
@@ -126,8 +127,9 @@ jobs:
     name: Deploy to rg-petrovisor-cus01
     needs: validate
     if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy')
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.action == 'deploy'
     runs-on: ubuntu-latest
     environment: azure-prod
     permissions:
