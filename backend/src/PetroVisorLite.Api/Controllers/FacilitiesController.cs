@@ -11,14 +11,36 @@ namespace PetroVisorLite.Api.Controllers;
 public class FacilitiesController : ControllerBase
 {
     private readonly IFacilityRepository _facilityRepository;
+    private readonly IFacilityComparisonService _facilityComparisonService;
 
-    public FacilitiesController(IFacilityRepository facilityRepository) => _facilityRepository = facilityRepository;
+    public FacilitiesController(
+        IFacilityRepository facilityRepository,
+        IFacilityComparisonService facilityComparisonService)
+    {
+        _facilityRepository = facilityRepository;
+        _facilityComparisonService = facilityComparisonService;
+    }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<FacilityDto>>> GetAll(CancellationToken cancellationToken)
     {
         var facilities = await _facilityRepository.GetAllAsync(cancellationToken);
         return Ok(facilities.Select(ToDto));
+    }
+
+    [HttpGet("comparison")]
+    public async Task<ActionResult<FacilityComparisonDto>> GetComparison(
+        [FromQuery] DateOnly rangeStart,
+        [FromQuery] DateOnly rangeEnd,
+        CancellationToken cancellationToken)
+    {
+        if (rangeStart > rangeEnd)
+        {
+            return BadRequest(new { message = "rangeStart must be on or before rangeEnd." });
+        }
+
+        var comparison = await _facilityComparisonService.GetFacilityComparisonAsync(rangeStart, rangeEnd, cancellationToken);
+        return Ok(comparison);
     }
 
     [HttpGet("{id:guid}")]
