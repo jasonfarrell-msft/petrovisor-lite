@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDeclineRateCalculator, DeclineRateCalculator>();
         services.AddScoped<IProductionLossDetector, ProductionLossDetector>();
         services.AddScoped<IArtificialLiftMonitor, ArtificialLiftMonitor>();
+        services.AddScoped<IFacilityComparisonService, FacilityComparisonService>();
         services.AddScoped<IKpiService, KpiService>();
         services.AddScoped<IQueryOrchestrator, QueryOrchestrator>();
 

@@ -11,13 +11,31 @@ public class ServiceCollectionExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddApplicationServices();
+        services.AddScoped<IFacilityRepository>(_ => new FakeFacilityRepository());
         services.AddScoped<IProductionRecordRepository>(_ => new FakeProductionRecordRepository());
         services.AddScoped<IWellRepository>(_ => new FakeWellRepository());
 
         var provider = services.BuildServiceProvider();
         var kpiService = provider.GetService<IKpiService>();
+        var facilityComparisonService = provider.GetService<IFacilityComparisonService>();
 
         Assert.NotNull(kpiService);
+        Assert.NotNull(facilityComparisonService);
+    }
+
+    private class FakeFacilityRepository : IFacilityRepository
+    {
+        public Task<PetroVisorLite.Domain.Facility?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult<PetroVisorLite.Domain.Facility?>(null);
+
+        public Task<IReadOnlyList<PetroVisorLite.Domain.Facility>> GetAllAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<PetroVisorLite.Domain.Facility>>(Array.Empty<PetroVisorLite.Domain.Facility>());
+
+        public Task AddAsync(PetroVisorLite.Domain.Facility facility, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task UpdateAsync(PetroVisorLite.Domain.Facility facility, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private class FakeProductionRecordRepository : IProductionRecordRepository
