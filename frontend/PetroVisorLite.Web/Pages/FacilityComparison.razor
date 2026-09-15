@@ -1,0 +1,82 @@
+@page "/facility-comparison"
+@inject PetroVisorLite.Web.Services.PetroVisorApiClient ApiClient
+@using PetroVisorLite.Web.Models
+
+<PageTitle>Facility Comparison</PageTitle>
+
+<h1>Facility Comparison</h1>
+
+@if (_loadError is not null)
+{
+    <div class="alert alert-danger">@_loadError</div>
+}
+else if (_comparison is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (_comparison.Facilities.Count == 0)
+{
+    <p>No facilities found.</p>
+}
+else
+{
+    <p class="text-muted">
+        Recent totals for @_comparison.RangeStart.ToString("yyyy-MM-dd") to @_comparison.RangeEnd.ToString("yyyy-MM-dd"),
+        sorted by total oil descending.
+    </p>
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Facility</th>
+                <th>Type</th>
+                <th>Tied-In Wells</th>
+                <th>Total Oil (bbl)</th>
+                <th>Total Gas (mcf)</th>
+                <th>Total Water (bbl)</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var facility in _comparison.Facilities)
+            {
+                <tr>
+                    <td>@facility.FacilityName</td>
+                    <td>@facility.FacilityType</td>
+                    <td>@facility.TiedInWellCount</td>
+                    <td>@facility.TotalOilBbl.ToString("N0")</td>
+                    <td>@facility.TotalGasMcf.ToString("N0")</td>
+                    <td>@facility.TotalWaterBbl.ToString("N0")</td>
+                    <td>
+                        @if (facility.HasNoReportedProduction)
+                        {
+                            <span class="badge bg-secondary">No reported production</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private const int RecentWindowDays = 30;
+
+    private FacilityComparisonDto? _comparison;
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var rangeEnd = DateOnly.FromDateTime(DateTime.UtcNow);
+            var rangeStart = rangeEnd.AddDays(-RecentWindowDays);
+
+            _comparison = await ApiClient.GetFacilityComparisonAsync(rangeStart, rangeEnd)
+                ?? new FacilityComparisonDto(rangeStart, rangeEnd, Array.Empty<FacilityComparisonRowDto>());
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"Could not reach the backend API: {ex.Message}";
+        }
+    }
+}
