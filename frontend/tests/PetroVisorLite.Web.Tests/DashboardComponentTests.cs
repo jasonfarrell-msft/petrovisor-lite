@@ -142,6 +142,39 @@ public class DashboardComponentTests : TestContext
         Assert.Single(cut.FindAll("button.ask-petrovisor-toggle"));
     }
 
+    [Fact]
+    public async Task PetroVisorApiClient_GetFacilityComparisonAsync_DeserializesComparisonPayload()
+    {
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            if (request.Method == HttpMethod.Get && request.RequestUri != null && request.RequestUri.AbsolutePath.EndsWith("/api/facilities/comparison"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""
+                    {
+                      "rangeStart": "2024-01-01",
+                      "rangeEnd": "2024-01-31",
+                      "facilities": [
+                        { "facilityId": "d1f4d7f2-2a64-4a8d-97d5-9a4f7e9d2d88", "facilityName": "Zulu", "facilityType": "Battery", "tiedInWellCount": 2, "totalOilBbl": 500, "totalGasMcf": 0, "totalWaterBbl": 0, "hasNoReportedProduction": false },
+                        { "facilityId": "9f3a11aa-a2ad-4f14-bf5b-8a3d9f9613a2", "facilityName": "Alpha", "facilityType": "Battery", "tiedInWellCount": 3, "totalOilBbl": 900, "totalGasMcf": 0, "totalWaterBbl": 0, "hasNoReportedProduction": false }
+                      ]
+                    }
+                    """, Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var apiClient = new PetroVisorApiClient(new HttpClient(handler) { BaseAddress = new Uri("https://localhost/") });
+
+        var dto = await apiClient.GetFacilityComparisonAsync(new DateOnly(2024, 1, 1), new DateOnly(2024, 1, 31));
+
+        Assert.NotNull(dto);
+        Assert.Equal(new[] { "Zulu", "Alpha" }, dto!.Facilities.Select(f => f.FacilityName));
+    }
+
     private static PetroVisorApiClient CreateApiClient(HttpResponseMessage dashboardResponse, HttpResponseMessage assistantResponse)
     {
         var handler = new StubHttpMessageHandler(request =>

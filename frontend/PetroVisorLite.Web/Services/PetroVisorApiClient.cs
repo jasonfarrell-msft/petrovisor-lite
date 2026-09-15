@@ -39,6 +39,14 @@ public class PetroVisorApiClient
     public async Task<IReadOnlyList<FacilityDto>> GetFacilitiesAsync(CancellationToken cancellationToken = default) =>
         await _httpClient.GetFromJsonAsync<List<FacilityDto>>("api/facilities", cancellationToken) ?? new List<FacilityDto>();
 
+    public async Task<FacilityComparisonDto?> GetFacilityComparisonAsync(
+        DateOnly rangeStart,
+        DateOnly rangeEnd,
+        CancellationToken cancellationToken = default) =>
+        await _httpClient.GetFromJsonAsync<FacilityComparisonDto>(
+            $"api/facilities/comparison?rangeStart={rangeStart:yyyy-MM-dd}&rangeEnd={rangeEnd:yyyy-MM-dd}",
+            cancellationToken);
+
     public async Task<IReadOnlyList<ProductionRecordDto>> GetProductionAsync(
         Guid wellId, DateOnly? from = null, DateOnly? to = null, CancellationToken cancellationToken = default)
     {
